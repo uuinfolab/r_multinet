@@ -1,0 +1,5 @@
+## This is a C++14 package
+CXX_STD = CXX14
+PKG_CFLAGS = -Ieclat/eclat/src -Ieclat/tract/src -Ieclat/math/src -Ieclat/util/src -Ieclat/apriori/src
+PKG_CXXFLAGS = -Isrc -Ilibs -Ieigen3 -Ispectra -Ieclat/eclat/src -Ieclat/tract/src -Ieclat/math/src -Ieclat/util/src -Ieclat/apriori/src -Iinfomap
+PKG_CPPFLAGS = -DNS_INFOMAP -DONLY_C_LOCALE=1
