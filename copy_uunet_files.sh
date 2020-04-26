@@ -1,5 +1,11 @@
 cd src
 
+rm -rf src
+rm -rf libs
+rm -rf infomap
+rm -rf eclat
+rm -rf eigen3
+
 cp -r ../ext/uunet/src src
 cp -r ../ext/uunet/libs libs
 cp -r ../ext/uunet/ext/infomap infomap
