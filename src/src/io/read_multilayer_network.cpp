@@ -1,9 +1,5 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
 #include "core/exceptions/DuplicateElementException.hpp"
+#include "core/exceptions/assert_not_null.hpp"
 #include "io/read_multilayer_network.hpp"
 #include "io/read_network.hpp"
 
@@ -11,7 +7,7 @@
 namespace uu {
 namespace net {
 
-std::unique_ptr<AttributedHomogeneousMultilayerNetwork>
+std::unique_ptr<MultilayerNetwork>
 read_attributed_homogeneous_multilayer_network(
     const std::string& infile,
     const std::string& name,
@@ -26,7 +22,7 @@ read_attributed_homogeneous_multilayer_network(
 
     // Check metadata consistency (@todo) & create graph & add attributes
 
-    auto net = create_attributed_homogeneous_multilayer_network(name);
+    auto net = std::make_unique<MultilayerNetwork>(name);
 
     for (auto l: meta.layers)
     {
@@ -73,7 +69,7 @@ read_attributed_homogeneous_multilayer_network(
     for (auto attr: meta.vertex_attributes)
     {
 
-        net->vertices()->attr()->add(attr.name, attr.type);
+        net->actors()->attr()->add(attr.name, attr.type);
 
     }
 
@@ -120,7 +116,7 @@ read_attributed_homogeneous_multilayer_network(
     {
         for (auto layer: *net->layers())
         {
-            for (auto a: *net->vertices())
+            for (auto a: *net->actors())
             {
                 layer->vertices()->add(a);
             }
@@ -135,7 +131,7 @@ read_attributed_homogeneous_multilayer_network(
 template <>
 Network*
 read_layer(
-    AttributedHomogeneousMultilayerNetwork* ml,
+    MultilayerNetwork* ml,
     const std::vector<std::string>& fields,
     size_t from_idx,
     size_t line_number
@@ -158,31 +154,31 @@ read_layer(
 template <>
 void
 read_vertex(
-    AttributedHomogeneousMultilayerNetwork* ml,
+    MultilayerNetwork* ml,
     const std::vector<std::string>& fields,
     const MultilayerMetadata& meta,
     size_t line_number
 )
 {
-    assert_not_null(ml, "read_vertex", "ml");
-    auto v = read_vertex(ml, fields, 0, line_number);
+    core::assert_not_null(ml, "read_vertex", "ml");
+    auto v = read_actor(ml, fields, 0, line_number);
 
-    read_attr_values(ml->vertices()->attr(), v, meta.vertex_attributes, fields, 1, line_number);
+    read_attr_values(ml->actors()->attr(), v, meta.vertex_attributes, fields, 1, line_number);
 
 }
 
 template <>
 void
 read_intralayer_vertex(
-    AttributedHomogeneousMultilayerNetwork* ml,
+    MultilayerNetwork* ml,
     const std::vector<std::string>& fields,
     const MultilayerMetadata& meta,
     size_t line_number
 )
 {
-    assert_not_null(ml, "read_intralayer_vertex", "ml");
-    auto v = read_vertex(ml, fields, 0, line_number);
-    auto l = read_layer<AttributedHomogeneousMultilayerNetwork, Network>(ml, fields, 1, line_number);
+    core::assert_not_null(ml, "read_intralayer_vertex", "ml");
+    auto v = read_actor(ml, fields, 0, line_number);
+    auto l = read_layer<MultilayerNetwork, Network>(ml, fields, 1, line_number);
     l->vertices()->add(v);
 
     auto v_attr = meta.intralayer_vertex_attributes.find(l->name);
@@ -196,17 +192,17 @@ read_intralayer_vertex(
 template <>
 void
 read_intralayer_edge(
-    AttributedHomogeneousMultilayerNetwork* ml,
+    MultilayerNetwork* ml,
     const std::vector<std::string>& fields,
     const MultilayerMetadata& meta,
     size_t line_number
 )
 {
-    assert_not_null(ml, "read_intralayer_edge", "ml");
-    auto v1 = read_vertex(ml, fields, 0, line_number);
-    auto v2 = read_vertex(ml, fields, 1, line_number);
+    core::assert_not_null(ml, "read_intralayer_edge", "ml");
+    auto v1 = read_actor(ml, fields, 0, line_number);
+    auto v2 = read_actor(ml, fields, 1, line_number);
 
-    auto l = read_layer<AttributedHomogeneousMultilayerNetwork, Network>(ml, fields, 2, line_number);
+    auto l = read_layer<MultilayerNetwork, Network>(ml, fields, 2, line_number);
 
     l->vertices()->add(v1);
     l->vertices()->add(v2);
@@ -232,18 +228,18 @@ read_intralayer_edge(
 template <>
 void
 read_interlayer_edge(
-    AttributedHomogeneousMultilayerNetwork* ml,
+    MultilayerNetwork* ml,
     const std::vector<std::string>& fields,
     const MultilayerMetadata& meta,
     size_t line_number
 )
 {
     (void)meta; // param not used
-    assert_not_null(ml, "read_interlayer_edge", "ml");
-    auto v1 = read_vertex(ml, fields, 0, line_number);
-    auto l1 = read_layer<AttributedHomogeneousMultilayerNetwork, Network>(ml, fields, 1, line_number);
-    auto v2 = read_vertex(ml, fields, 2, line_number);
-    auto l2 = read_layer<AttributedHomogeneousMultilayerNetwork, Network>(ml, fields, 3, line_number);
+    core::assert_not_null(ml, "read_interlayer_edge", "ml");
+    auto v1 = read_actor(ml, fields, 0, line_number);
+    auto l1 = read_layer<MultilayerNetwork, Network>(ml, fields, 1, line_number);
+    auto v2 = read_actor(ml, fields, 2, line_number);
+    auto l2 = read_layer<MultilayerNetwork, Network>(ml, fields, 3, line_number);
 
     l1->vertices()->add(v1);
     l2->vertices()->add(v2);

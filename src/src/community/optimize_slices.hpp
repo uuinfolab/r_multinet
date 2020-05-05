@@ -7,10 +7,10 @@
 namespace uu {
 namespace net {
 
-    std::vector<double>
-    optimize_slices(
-                    const TemporalNetwork* original_net,
-                    size_t max_slices);
+std::vector<double>
+optimize_slices(
+    const TemporalNetwork* original_net,
+    size_t max_slices);
 
 }
 }

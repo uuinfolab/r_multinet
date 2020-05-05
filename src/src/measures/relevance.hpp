@@ -1,18 +1,11 @@
-/**
- * Social Network Analysis measures for multiplex networks.
- *
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
-#ifndef MNET_MEASURES_RELEVANCE_H_
-#define MNET_MEASURES_RELEVANCE_H_
+#ifndef UU_MEASURES_RELEVANCE_H_
+#define UU_MEASURES_RELEVANCE_H_
 
 #include <vector>
 #include "core/exceptions/assert_not_null.hpp"
 #include "objects/Vertex.hpp"
 #include "objects/EdgeMode.hpp"
-#include "net/datastructures/containers/GenericObjectList.hpp"
+#include "networks/_impl/containers/GenericObjectList.hpp"
 #include "measures/neighborhood.hpp"
 
 namespace uu {

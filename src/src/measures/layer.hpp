@@ -1,10 +1,5 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
-#ifndef UU_NET_MEASURES_LAYER_H_
-#define UU_NET_MEASURES_LAYER_H_
+#ifndef UU_MEASURES_LAYER_H_
+#define UU_MEASURES_LAYER_H_
 
 #include <vector>
 #include <algorithm>
@@ -57,7 +52,7 @@ actor_existence_property_matrix(
     const M* mnet
 )
 {
-    core::PropertyMatrix<const Vertex*,const typename M::layer_type*,bool> P(mnet->vertices()->size(),mnet->layers()->size(),false);
+    core::PropertyMatrix<const Vertex*,const typename M::layer_type*,bool> P(mnet->actors()->size(),mnet->layers()->size(),false);
 
     for (auto layer: *mnet->layers())
         for (auto actor: *layer->vertices())
@@ -76,7 +71,7 @@ edge_existence_property_matrix_undirected(
     const M* mnet
 )
 {
-    long n = mnet->vertices()->size();
+    long n = mnet->actors()->size();
     core::PropertyMatrix<Dyad,const typename M::layer_type*,bool> P(n*(n-1)/2,mnet->layers()->size(),false);
 
     for (auto layer: *mnet->layers())
@@ -98,7 +93,7 @@ edge_existence_property_matrix(
     const M* mnet
 )
 {
-    long n = mnet->vertices()->size();
+    long n = mnet->actors()->size();
     core::PropertyMatrix<std::pair<const typename M::vertex_type*,const typename M::vertex_type*>,const typename M::layer_type*,bool> P(n*(n-1),mnet->layers()->size(),false);
 
     for (auto layer: *mnet->layers())
@@ -133,7 +128,7 @@ core::PropertyMatrix<Triad,const typename M::layer_type*,bool>
 triangle_existence_property_matrix(
     const M* mnet)
 {
-    long n = mnet->vertices()->size();
+    long n = mnet->actors()->size();
     core::PropertyMatrix<Triad,const typename M::layer_type*,bool> P(n*(n-1)*(n-2)/6,mnet->layers()->size(),false);
 
     for (auto layer: *mnet->layers())
@@ -186,9 +181,9 @@ actor_degree_property_matrix(
     EdgeMode mode
 )
 {
-    core::PropertyMatrix<const Vertex*,const typename M::layer_type*,double> P(mnet->vertices()->size(),mnet->layers()->size(),0);
+    core::PropertyMatrix<const Vertex*,const typename M::layer_type*,double> P(mnet->actors()->size(),mnet->layers()->size(),0);
 
-    for (const Vertex* actor: *mnet->vertices())
+    for (const Vertex* actor: *mnet->actors())
     {
         for (auto layer: *mnet->layers())
         {
@@ -213,9 +208,9 @@ actor_cc_property_matrix(
     const M* mnet
 )
 {
-    core::PropertyMatrix<const Vertex*,const typename M::layer_type*,double> P(mnet->vertices()->size(),mnet->layers()->size(),0);
+    core::PropertyMatrix<const Vertex*,const typename M::layer_type*,double> P(mnet->actors()->size(),mnet->layers()->size(),0);
 
-    for (const Vertex* actor: *mnet->vertices())
+    for (const Vertex* actor: *mnet->actors())
     {
         for (auto layer: *mnet->layers())
         {

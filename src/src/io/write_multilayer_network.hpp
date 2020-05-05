@@ -1,18 +1,11 @@
-/**
- *
- *
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
-#ifndef UU_MNET_IO_WRITEATTRIBUTEDHOMOGENEOUSMULTILAYER_H_
-#define UU_MNET_IO_WRITEATTRIBUTEDHOMOGENEOUSMULTILAYER_H_
+#ifndef UU_IO_WRITEMULTILAYERNETWORK_H_
+#define UU_IO_WRITEMULTILAYERNETWORK_H_
 
 #include <string>
 #include <memory>
-#include "networks/AttributedHomogeneousMultilayerNetwork.hpp"
+#include "networks/MultilayerNetwork.hpp"
 #include "core/utils/string.hpp"
-#include "net/io/read_common.hpp"
+#include "io/_impl/read_common.hpp"
 
 namespace uu {
 namespace net {
@@ -20,7 +13,7 @@ namespace net {
 template <typename LayerIterator>
 void
 write_attributed_homogeneous_multilayer_network(
-    const AttributedHomogeneousMultilayerNetwork* net,
+    const MultilayerNetwork* net,
     LayerIterator begin,
     LayerIterator end,
     const std::string& outfile,
@@ -30,7 +23,7 @@ write_attributed_homogeneous_multilayer_network(
 template <typename LayerIterator>
 void
 write_graphml(
-    const AttributedHomogeneousMultilayerNetwork* mnet,
+    const MultilayerNetwork* mnet,
     LayerIterator begin,
     LayerIterator end,
     const std::string& path,
@@ -45,7 +38,7 @@ write_graphml(
 template <typename LayerIterator>
 void
 write_attributed_homogeneous_multilayer_network(
-    const AttributedHomogeneousMultilayerNetwork* mnet,
+    const MultilayerNetwork* mnet,
     LayerIterator begin,
     LayerIterator end,
     const std::string& path,
@@ -119,7 +112,7 @@ write_attributed_homogeneous_multilayer_network(
 
     outfile << "#ACTOR ATTRIBUTES" << std::endl;
 
-    for (auto attr: *mnet->vertices()->attr())
+    for (auto attr: *mnet->actors()->attr())
     {
         outfile << attr->name << sep << core::to_string(attr->type) << std::endl;
     }
@@ -173,10 +166,10 @@ write_attributed_homogeneous_multilayer_network(
 
     outfile << "#ACTORS" << std::endl;
 
-    for (auto actor: *mnet->vertices())
+    for (auto actor: *mnet->actors())
     {
         outfile << actor->name;
-        auto actor_attrs = mnet->vertices()->attr();
+        auto actor_attrs = mnet->actors()->attr();
 
         for (auto attr: *actor_attrs)
         {
@@ -365,7 +358,7 @@ write_attributed_homogeneous_multilayer_network(
 template <typename LayerIterator>
 void
 write_graphml(
-    const AttributedHomogeneousMultilayerNetwork* mnet,
+    const MultilayerNetwork* mnet,
     LayerIterator begin,
     LayerIterator end,
     const std::string& path,
@@ -439,7 +432,7 @@ end_loop:
     }
 
     // Actor attributes
-    for (auto attr: *mnet->vertices()->attr())
+    for (auto attr: *mnet->actors()->attr())
     {
         if (attr->type==core::AttributeType::NUMERIC || attr->type==core::AttributeType::DOUBLE)
         {
@@ -508,7 +501,7 @@ end_loop:
     if (merge_actors)
     {
         // one for each actor
-        for (auto actor: *mnet->vertices())
+        for (auto actor: *mnet->actors())
         {
 
             std::string actor_name = actor->name;
@@ -569,7 +562,7 @@ end_loop:
                 }
             }
 
-            auto attrs = mnet->vertices()->attr();
+            auto attrs = mnet->actors()->attr();
 
             for (auto attr: *attrs)
             {

@@ -1,10 +1,4 @@
-/**
- * History:
- * - 2020.28.01 file created, following a restructuring of the previous library.
- */
-
 #include "io/read_probabilistic_network.hpp"
-
 
 namespace uu {
 namespace net {

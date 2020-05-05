@@ -5,7 +5,7 @@
 #include "community/CommunityStructure.hpp"
 #include "community/VertexLayerCommunity.hpp"
 #include "objects/Vertex.hpp"
-#include "net/community/glouvain_utils.hpp"
+#include "community/_impl/glouvain2_utils.hpp"
 #include <memory>
 
 

@@ -1,8 +1,3 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
 #ifndef UU_NETWORKS_TEMPORALNETWORK_H_
 #define UU_NETWORKS_TEMPORALNETWORK_H_
 
@@ -12,8 +7,8 @@ namespace uu {
 namespace net {
 
 /**
- * A weighted network is a Network with a default edge attribute and methods to set/get values
- * on this attribute.
+ * A TemporalNetwork is a MultiNetwork with a default edge attribute to store times
+ * and methods to set/get values on this attribute.
  */
 
 class TemporalNetwork
@@ -26,23 +21,26 @@ class TemporalNetwork
 
   public:
 
-    const std::string KTIME_ATTR_NAME = "t";
+    const std::string kTIME_ATTR_NAME = "t";
 
     /**
-     * Creates a network with directed or undirected simple edges and with or without loops.
+     * Creates a TemporalNetwork with directed or undirected multiedges and with or without loops.
      */
     TemporalNetwork(
         const std::string& name,
         EdgeDir dir = EdgeDir::UNDIRECTED,
-        bool allow_loops = false
+        bool allow_loops = true
     );
 
+
     /**
-     * Checks if the graph is weighted.
+     * Checks if the network is temporal.
+     * Always returns true.
      */
     bool
     is_temporal(
     ) const override;
+
 
     /**
      * Sets the time of an edge.
@@ -53,6 +51,7 @@ class TemporalNetwork
         core::Time t
     );
 
+
     /**
      * Gets the time of an edge.
      */
@@ -61,12 +60,14 @@ class TemporalNetwork
         const Edge* e
     ) const;
 
+
     /**
-     * Gets the highest edge time in the network.
+     * Gets the smallest edge time in the network.
      */
     core::Value<core::Time>
     get_min_time(
     ) const;
+
 
     /**
      * Gets the highest edge time in the network.
@@ -75,12 +76,6 @@ class TemporalNetwork
     get_max_time(
     ) const;
 
-    /**
-     * Returns a string providing a summary of the network structure.
-     */
-    std::string
-    summary(
-    ) const override;
 
 };
 

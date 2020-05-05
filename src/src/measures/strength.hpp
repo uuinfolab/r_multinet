@@ -1,10 +1,5 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
-#ifndef UU_WNET_MEASURES_STRENGTH_H_
-#define UU_WNET_MEASURES_STRENGTH_H_
+#ifndef UU_MEASURES_STRENGTH_H_
+#define UU_MEASURES_STRENGTH_H_
 
 #include <vector>
 #include <algorithm>

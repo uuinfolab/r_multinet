@@ -1,13 +1,11 @@
 cd src
 
 rm -rf src
-rm -rf libs
 rm -rf infomap
 rm -rf eclat
 rm -rf eigen3
 
 cp -r ../ext/uunet/src src
-cp -r ../ext/uunet/libs libs
 cp -r ../ext/uunet/ext/infomap infomap
 cp -r ../ext/uunet/ext/eclat eclat
 cp -r ../ext/uunet/ext/eigen3 eigen3
@@ -16,13 +14,11 @@ cp -r ../ext/uunet/ext/eigen3 eigen3
 printf "SOURCES=" > sources
 ls | grep "\.cpp$" >> sources
 find src/* | grep "\.cpp$" >> sources
-find libs/* | grep "\.cpp$" >> sources
 find infomap/* | grep "\.cpp$" >> sources
 find eclat/* | grep "\.c$" >> sources
 printf "OBJECTS=" > objects
 ls | grep "\.cpp$" | sed 's/cpp$/o/g' >> objects
 find src/* | grep "\.cpp$" | sed 's/cpp$/o/g' >> objects
-find libs/* | grep "\.cpp$" | sed 's/cpp$/o/g' >> objects
 find infomap/* | grep "\.cpp$" | sed 's/cpp$/o/g' >> objects
 find eclat/* | grep "\.c$" | sed 's/c$/o/g' >> objects
 
@@ -40,13 +36,3 @@ tr '\n' ' ' < objects >> Makevars.win
 
 rm sources
 rm objects
-# copy external libraries
-##mkdir lib
-##cp -r ../../../C++/ext/eigen3 lib
-##cp -r ../../../C++/ext/infomap lib
-# copying the .h files from the eclat library
-##mkdir lib/eclat
-##find ../../../C++/ext/eclat* | grep "\\.h$" | sed 's/^/cp /g' | sed 's/$/ lib\/eclat/g' > f
-##chmod +x f
-##./f
-##rm f

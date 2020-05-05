@@ -1,20 +1,13 @@
-/**
- * Social Network Analysis measures for multiplex networks.
- *
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
-#ifndef MNET_MEASURES_DISTANCE_H_
-#define MNET_MEASURES_DISTANCE_H_
+#ifndef UU_MEASURES_DISTANCE_H_
+#define UU_MEASURES_DISTANCE_H_
 
 #include <unordered_map>
 #include "core/exceptions/assert_not_null.hpp"
 #include "core/utils/Counter.hpp"
 #include "objects/Vertex.hpp"
 #include "objects/EdgeMode.hpp"
-#include "mnet/datastructures/objects/MultidimensionalPathLength.hpp"
-#include "net/datastructures/containers/GenericObjectList.hpp"
+#include "objects/MLPathLength.hpp"
+#include "networks/_impl/containers/GenericObjectList.hpp"
 #include "measures/neighborhood.hpp"
 
 namespace uu {
@@ -22,7 +15,7 @@ namespace net {
 
 
 template <typename M>
-std::unordered_map<const Vertex*, std::set<MultidimensionalPathLength<M>> >
+std::unordered_map<const Vertex*, std::set<MLPathLength<M>> >
         pareto_distance(
             const M* net,
             const Vertex* from
@@ -31,7 +24,7 @@ std::unordered_map<const Vertex*, std::set<MultidimensionalPathLength<M>> >
 
 
 template <typename M>
-std::unordered_map<const Vertex*, std::set<MultidimensionalPathLength<M>> >
+std::unordered_map<const Vertex*, std::set<MLPathLength<M>> >
         pareto_distance(
             const M* mnet,
             const Vertex* from
@@ -42,27 +35,27 @@ std::unordered_map<const Vertex*, std::set<MultidimensionalPathLength<M>> >
       public:
         int
         operator()(
-            const std::pair<MultidimensionalPathLength<M>,long>& lhs,
-            const std::pair<MultidimensionalPathLength<M>,long>& rhs
+            const std::pair<MLPathLength<M>,long>& lhs,
+            const std::pair<MLPathLength<M>,long>& rhs
         )
         {
             return lhs.second < rhs.second;
 
         }
     };
-    std::unordered_map<const Vertex*,std::set<std::pair<MultidimensionalPathLength<M>,long>,TimestampComparator> > distances;
+    std::unordered_map<const Vertex*,std::set<std::pair<MLPathLength<M>,long>,TimestampComparator> > distances;
     // timestamps, used for efficiency reasons to avoid processing edges when no changes have occurred since the last iteration
     long ts = 0;
     std::unordered_map<const typename M::layer_type*, core::PairCounter<const Vertex*, const Vertex*>> last_updated;
 
     // initialize distance array - for every target vertex there is still no found path leading to it...
-    for (auto actor: *mnet->vertices())
+    for (auto actor: *mnet->actors())
     {
-        distances[actor] = std::set<std::pair<MultidimensionalPathLength<M>,long>,TimestampComparator>();
+        distances[actor] = std::set<std::pair<MLPathLength<M>,long>,TimestampComparator>();
     } // ...except for the source node, reachable from itself via an empty path
 
-    MultidimensionalPathLength<M> empty(mnet);
-    distances[from].insert(std::pair<MultidimensionalPathLength<M>,long>(empty,ts));
+    MLPathLength<M> empty(mnet);
+    distances[from].insert(std::pair<MLPathLength<M>,long>(empty,ts));
 
     bool changes; // keep updating the paths until when no changes occur during one full scan of the edges
 
@@ -114,14 +107,14 @@ std::unordered_map<const Vertex*, std::set<MultidimensionalPathLength<M>> >
                         // otherwise, extend the distance to reach e.v2
                         // TOADD: check it's not a cycle, for efficiency reasons (?)
                         // Extend
-                        MultidimensionalPathLength<M> extended_distance = dist.first;
+                        MLPathLength<M> extended_distance = dist.first;
                         extended_distance.ts = ts;
                         extended_distance.step(layer, layer);
                         //cout << "producing candidate: " << extended_distance << endl;
 
                         // compare the new distance with the other temporary distances to e.v2
                         bool should_be_inserted = true;
-                        std::set<std::pair<MultidimensionalPathLength<M>,long>,TimestampComparator> dominated; // here we store the distances that will be removed if dominated by the new one
+                        std::set<std::pair<MLPathLength<M>,long>,TimestampComparator> dominated; // here we store the distances that will be removed if dominated by the new one
 
                         for (auto previous: distances[node_to])
                         {
@@ -161,7 +154,7 @@ std::unordered_map<const Vertex*, std::set<MultidimensionalPathLength<M>> >
                         if (should_be_inserted)
                         {
                             //cout << " INSERT NEW for " << actor2->name << " - " << extended_distance << endl;
-                            distances[node_to].insert(std::pair<MultidimensionalPathLength<M>,long>(extended_distance,ts));
+                            distances[node_to].insert(std::pair<MLPathLength<M>,long>(extended_distance,ts));
                             //cout << "insert " << mnet.getGlobalName(actor2) << " - " << extended_distance << endl;
                             //cout << "add " << paths[toGlobalId].size() << "\n";
                             //cout << "New path " << fromGlobalId << " => "
@@ -171,7 +164,7 @@ std::unordered_map<const Vertex*, std::set<MultidimensionalPathLength<M>> >
 
                         // remove dominated paths
                         // ?? why not just remove?
-                        std::set<std::pair<MultidimensionalPathLength<M>,long>,TimestampComparator> diff;
+                        std::set<std::pair<MLPathLength<M>,long>,TimestampComparator> diff;
                         std::set_difference(distances[node_to].begin(),
                                             distances[node_to].end(), dominated.begin(),
                                             dominated.end(), std::inserter(diff, diff.end()));
@@ -183,7 +176,7 @@ std::unordered_map<const Vertex*, std::set<MultidimensionalPathLength<M>> >
     }
     while (changes);
 
-    std::unordered_map<const Vertex*, std::set<MultidimensionalPathLength<M>> > result;
+    std::unordered_map<const Vertex*, std::set<MLPathLength<M>> > result;
 
     for (auto p: distances)
     {

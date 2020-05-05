@@ -1,6 +1,6 @@
 #include <unordered_map>
 #include <vector>
-#include "net/community/louvain_utils.hpp"
+#include "community/_impl/louvain_utils.hpp"
 
 namespace uu {
 namespace net {

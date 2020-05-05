@@ -1,8 +1,3 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
 #include <unordered_set>
 #include <unordered_map>
 #include <queue>

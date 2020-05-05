@@ -1,28 +1,23 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
 #ifndef UU_NETWORKS_NETWORK_H_
 #define UU_NETWORKS_NETWORK_H_
 
 #include <memory>
 #include <string>
-#include "net/datastructures/graphs/Graph.hpp"
-#include "net/datastructures/stores/AttrVertexStore.hpp"
-#include "net/datastructures/stores/AttrSimpleEdgeStore.hpp"
+#include "networks/_impl/Graph.hpp"
+#include "networks/_impl/stores/AttrVertexStore.hpp"
+#include "networks/_impl/stores/AttrSimpleEdgeStore.hpp"
 
 namespace uu {
 namespace net {
 
 /**
- * A Network is a graph with at most one edge between each pair of vertices.
- * The Network class also provides vertex and edge attributes, which are local to the network.
- * That is, the same vertex inside another network will have different attributes.
+ * A Network is an attributed graph with at most one edge between each pair of vertices.
  *
+ * Vertex and edge attributes are local to the network, that is, the same vertex inside another
+ * network will have different attributes.
  * Depending on its parameters, a Network can allow or disallow loops (default: disallow) and
  * be directed or undirected (default: undirected). That is, a Network by default corresponds to
- * a simple graph.
+ * a mathematical simple graph.
  */
 class Network
 {
@@ -32,7 +27,7 @@ class Network
     const std::string name;
 
     /**
-     * Creates a graph with directed or undirected simple edges and allowing or not loops.
+     * Creates a Network with directed or undirected simple edges and allowing or not loops.
      */
     Network(
         const std::string& name,
@@ -42,7 +37,7 @@ class Network
 
 
     /**
-     * Returns a pointer to the Network's vertex set.
+     * Returns a pointer to the network's vertices.
      */
     AttrVertexStore*
     vertices(
@@ -50,7 +45,7 @@ class Network
 
 
     /**
-     * Returns a pointer to the Network's vertex set.
+     * Returns a pointer to the network's vertices.
      */
     const AttrVertexStore*
     vertices(
@@ -58,7 +53,7 @@ class Network
 
 
     /**
-     * Returns a pointer to the Network's edge set.
+     * Returns a pointer to the network's edges.
      */
     AttrSimpleEdgeStore*
     edges(
@@ -66,7 +61,7 @@ class Network
 
 
     /**
-     * Returns a pointer to the Network's edge set.
+     * Returns a pointer to the network's edges.
      */
     const AttrSimpleEdgeStore*
     edges(
@@ -74,7 +69,7 @@ class Network
 
 
     /**
-     * Checks if the Network in this graph are directed.
+     * Checks if the edges in this network are directed.
      */
     virtual
     bool
@@ -83,7 +78,17 @@ class Network
 
 
     /**
-     * Checks if the Network is weighted.
+     * Checks if the network allows loops.
+     */
+    virtual
+    bool
+    allows_loops(
+    ) const;
+
+
+    /**
+     * Checks if the network is weighted.
+     * Always returns false.
      */
     virtual
     bool
@@ -92,7 +97,8 @@ class Network
 
 
     /**
-     * Checks if the Network is probabilistic.
+     * Checks if the network is probabilistic.
+     * Always returns false.
      */
     virtual
     bool
@@ -101,7 +107,8 @@ class Network
 
 
     /**
-     * Checks if the Network has temporal information on its edges.
+     * Checks if the network is temporal.
+     * Always returns false.
      */
     virtual
     bool
@@ -110,7 +117,7 @@ class Network
 
 
     /**
-     * Checks if the Network allows users to define their own generic attributes.
+     * Checks if the network allows users to define their own generic attributes.
      * Always returns true.
      */
     virtual
@@ -120,30 +127,12 @@ class Network
 
 
     /**
-     * Checks if the Network allows multi-edges.
+     * Checks if the network allows multi-edges.
      * Always returns false.
      */
     virtual
     bool
     allows_multi_edges(
-    ) const;
-
-
-    /**
-     * Checks if the graph allows loops.
-     */
-    virtual
-    bool
-    allows_loops(
-    ) const;
-
-
-    /**
-     * Returns a string providing a summary of the Network structure.
-     */
-    virtual
-    std::string
-    summary(
     ) const;
 
 

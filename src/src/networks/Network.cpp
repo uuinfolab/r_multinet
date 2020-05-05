@@ -1,9 +1,6 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
 #include "networks/Network.hpp"
-#include "net/datastructures/observers/NoLoopCheckObserver.hpp"
+
+#include "networks/_impl/observers/NoLoopCheckObserver.hpp"
 
 namespace uu {
 namespace net {
@@ -64,7 +61,6 @@ edges(
 }
 
 
-
 const AttrSimpleEdgeStore*
 Network::
 edges(
@@ -81,7 +77,6 @@ is_directed(
 {
     return data_->is_directed();
 }
-
 
 
 bool
@@ -102,7 +97,6 @@ is_probabilistic(
 }
 
 
-
 bool
 Network::
 is_temporal(
@@ -110,7 +104,6 @@ is_temporal(
 {
     return data_->is_temporal();
 }
-
 
 
 bool
@@ -122,7 +115,6 @@ is_attributed(
 }
 
 
-
 bool
 Network::
 allows_multi_edges(
@@ -132,22 +124,12 @@ allows_multi_edges(
 }
 
 
-
 bool
 Network::
 allows_loops(
 ) const
 {
     return data_->allows_loops();
-}
-
-
-std::string
-Network::
-summary(
-) const
-{
-    return "Network(" + std::to_string(vertices()->size()) + "," + std::to_string(edges()->size()) + ")";
 }
 
 }

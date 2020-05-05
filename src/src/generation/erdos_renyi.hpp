@@ -1,8 +1,5 @@
-/**
- */
-
-#ifndef UU_NET_GENERATION_ER_H_
-#define UU_NET_GENERATION_ER_H_
+#ifndef UU_GENERATION_ER_H_
+#define UU_GENERATION_ER_H_
 
 #include "networks/Network.hpp"
 #include <memory>

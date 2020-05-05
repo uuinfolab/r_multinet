@@ -1,10 +1,5 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
-#ifndef UU_NET_DATASTRUCTURE_CONNECTIVITY_TRAIL_
-#define UU_NET_DATASTRUCTURE_CONNECTIVITY_TRAIL_
+#ifndef UU_OBJECTS_TRAIL_
+#define UU_OBJECTS_TRAIL_
 
 #include <unordered_set>
 #include "objects/Walk.hpp"

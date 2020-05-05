@@ -1,8 +1,3 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
 #ifndef UU_NETWORKS_PROBABILISTICNETWORK_H_
 #define UU_NETWORKS_PROBABILISTICNETWORK_H_
 
@@ -11,21 +6,25 @@
 namespace uu {
 namespace net {
 
-
+/**
+ * A ProbabilisticNetwork is a Network with a default edge attribute to store probabilities
+ * and methods to set/get values on this attribute.
+ */
 class ProbabilisticNetwork
     : public Network
 {
 
   private:
 
-    std::string KPROB_ATTR_NAME = "prob";
+    std::string kPROB_ATTR_NAME = "p";
 
     typedef Network super;
 
   public:
 
     /**
-     * Creates a network with directed or undirected simple edges and with or without loops.
+     * Creates a ProbabilisticNetwork with directed or undirected simple edges and
+     * with or without loops.
      */
     ProbabilisticNetwork(
         const std::string& name,
@@ -33,15 +32,19 @@ class ProbabilisticNetwork
         bool allow_loops = false
     );
 
+
     /**
-     * Checks if the graph is weighted.
+     * Checks if the network is probabilistic.
+     * Always returns true.
      */
     bool
     is_probabilistic(
     ) const override;
 
+
     /**
-     * Sets the weight of an edge.
+     * Sets the probability of an edge.
+     * @throw uu::core::WrongParameterException if p < 0 or p > 1.
      */
     void
     set_prob(
@@ -49,20 +52,14 @@ class ProbabilisticNetwork
         double p
     );
 
+
     /**
-     * Sets the weight of an edge.
+     * Gets the probability of an edge.
      */
     core::Value<double>
     get_prob(
         const Edge* e
     ) const;
-
-    /**
-     * Returns a string providing a summary of the network.
-     */
-    std::string
-    summary(
-    ) const override;
 
 };
 

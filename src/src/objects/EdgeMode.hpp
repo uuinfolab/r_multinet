@@ -1,10 +1,5 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
-#ifndef UU_NET_DATASTRUCTURES_OBJECTS_EDGEMODE_H_
-#define UU_NET_DATASTRUCTURES_OBJECTS_EDGEMODE_H_
+#ifndef UU_OBJECTS_EDGEMODE_H_
+#define UU_OBJECTS_EDGEMODE_H_
 
 namespace uu {
 namespace net {

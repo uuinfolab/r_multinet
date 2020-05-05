@@ -1,5 +1,6 @@
-#include <sstream>
 #include "objects/Dyad.hpp"
+
+#include <sstream>
 
 namespace uu {
 namespace net {

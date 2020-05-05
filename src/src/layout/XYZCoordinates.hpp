@@ -1,10 +1,5 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
-#ifndef UU_MNET_LAYOUT_XYZCOORDINATES_H_
-#define UU_MNET_LAYOUT_XYZCOORDINATES_H_
+#ifndef UU_LAYOUT_XYZCOORDINATES_H_
+#define UU_LAYOUT_XYZCOORDINATES_H_
 
 namespace uu {
 namespace net {

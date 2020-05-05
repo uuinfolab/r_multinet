@@ -11,7 +11,7 @@ Vertex(
 {
 }
 
-
+/*
 std::shared_ptr<const Vertex>
 Vertex::
 create(
@@ -20,6 +20,7 @@ create(
 {
     return std::make_shared<const Vertex>(name);
 }
+*/
 
 std::string
 Vertex::

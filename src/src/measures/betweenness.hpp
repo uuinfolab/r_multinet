@@ -1,14 +1,7 @@
-/**
- * History:
- * - 2020.01.04 file created.
- */
-
-#ifndef UU_NET_MEASURES_BETWEENNESS_H_
-#define UU_NET_MEASURES_BETWEENNESS_H_
+#ifndef UU_MEASURES_BETWEENNESS_H_
+#define UU_MEASURES_BETWEENNESS_H_
 
 #include <unordered_map>
-
-#include "betweenness.ipp" // definition
 
 namespace uu {
 namespace net {
@@ -25,5 +18,7 @@ betweenness(
 
 }
 }
+
+#include "betweenness.ipp" // definition
 
 #endif

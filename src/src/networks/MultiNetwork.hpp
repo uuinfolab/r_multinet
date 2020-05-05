@@ -1,27 +1,25 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
 #ifndef UU_NETWORKS_MULTINETWORK_H_
 #define UU_NETWORKS_MULTINETWORK_H_
 
 #include <memory>
 #include <string>
-#include "net/datastructures/graphs/Graph.hpp"
-#include "net/datastructures/stores/AttrVertexStore.hpp"
-#include "net/datastructures/stores/AttrMultiEdgeStore.hpp"
+#include "networks/_impl/Graph.hpp"
+#include "networks/_impl/stores/AttrVertexStore.hpp"
+#include "networks/_impl/stores/AttrMultiEdgeStore.hpp"
 
 namespace uu {
 namespace net {
 
 /**
- * A simple graph is an undirected graph with at most one edge between each pair of vertices,
- * no loops and no attributes.
- * In this library that is the default setting for simple graphs, but we can also have directed
- * edges and loops if specified in the creation function.
+ * A MultiNetwork is an attributed graph allowing multiple edges between each pair of vertices.
+ *
+ * Vertex and edge attributes are local to the network, that is, the same vertex inside another
+ * network will have different attributes.
+ *
+ * Depending on its parameters, a MultiNetwork can allow or disallow loops (default: allow) and
+ * be directed or undirected (default: undirected). That is, a MultiNetwork by default corresponds
+ * to a mathematical multigraph.
  */
-
 class MultiNetwork
 {
 
@@ -30,23 +28,23 @@ class MultiNetwork
     const std::string name;
 
     /**
-     * Creates a graph with directed or undirected simple edges and with or without loops.
+     * Creates a MultiNetwork with directed or undirected multiedges and with or without loops.
      */
     MultiNetwork(
         const std::string& name,
         EdgeDir dir = EdgeDir::UNDIRECTED,
-        bool allow_loops = false
+        bool allow_loops = true
     );
 
     /**
-     * Returns a pointer to the graph's vertex store.
+     * Returns a pointer to the network's vertices.
      */
     AttrVertexStore*
     vertices(
     );
 
     /**
-     * Returns a pointer to the graph's (const) vertex store.
+     * Returns a pointer to the network's (const) vertices.
      */
     const AttrVertexStore*
     vertices(
@@ -54,7 +52,7 @@ class MultiNetwork
 
 
     /**
-     * Returns a pointer to the graph's edge store.
+     * Returns a pointer to the network's edges.
      */
     AttrMultiEdgeStore*
     edges(
@@ -62,7 +60,7 @@ class MultiNetwork
 
 
     /**
-     * Returns a pointer to the graph's (const) edge store.
+     * Returns a pointer to the network's (const) edges.
      */
     const AttrMultiEdgeStore*
     edges(
@@ -70,7 +68,7 @@ class MultiNetwork
 
 
     /**
-     * Checks if the edges in this graph are directed.
+     * Checks if the edges in this network are directed.
      */
     virtual
     bool
@@ -79,7 +77,17 @@ class MultiNetwork
 
 
     /**
-     * Checks if the graph is weighted.
+     * Checks if the network allows loops.
+     */
+    virtual
+    bool
+    allows_loops(
+    ) const;
+
+
+    /**
+     * Checks if the network is weighted.
+     * Always returns false.
      */
     virtual
     bool
@@ -87,7 +95,8 @@ class MultiNetwork
     ) const;
 
     /**
-     * Checks if the graph is probabilistic.
+     * Checks if the network is probabilistic.
+     * Always returns false.
      */
     virtual
     bool
@@ -96,7 +105,8 @@ class MultiNetwork
 
 
     /**
-     * Checks if the graph has temporal information on its edges.
+     * Checks if the network has temporal information on its edges.
+     * Always returns false.
      */
     virtual
     bool
@@ -105,7 +115,8 @@ class MultiNetwork
 
 
     /**
-     * Checks if the graph allows users to define their own generic attributes.
+     * Checks if the network allows users to define their own generic attributes.
+     * Always returns true.
      */
     virtual
     bool
@@ -114,29 +125,14 @@ class MultiNetwork
 
 
     /**
-     * Checks if the graph allows multi-edges. If false, only simple edges are allowed.
+     * Checks if the network allows multi-edges.
+     * Always returns true.
      */
     virtual
     bool
     allows_multi_edges(
     ) const;
 
-
-    /**
-     * Checks if the graph allows loops.
-     */
-    virtual
-    bool
-    allows_loops(
-    ) const;
-
-    /**
-     * Returns a string providing a summary of the graph structure.
-     */
-    virtual
-    std::string
-    summary(
-    ) const;
 
   private:
 

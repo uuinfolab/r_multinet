@@ -1,7 +1,3 @@
-/**
- *
- */
-
 #ifndef UU_OPERATIONS_EMPTYCOPY_H_
 #define UU_OPERATIONS_EMPTYCOPY_H_
 

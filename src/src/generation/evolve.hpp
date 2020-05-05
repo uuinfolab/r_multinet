@@ -8,13 +8,13 @@
  * 3) external evolution (the layer imports nodes and edges from another layer)
  */
 
-#ifndef UU_MNET_GENERATION_EVOLVE_H_
-#define UU_MNET_GENERATION_EVOLVE_H_
+#ifndef UU_GENERATION_EVOLVE_H_
+#define UU_GENERATION_EVOLVE_H_
 
 #include <unordered_map>
 #include "core/utils/random.hpp"
 #include "core/exceptions/ElementNotFoundException.hpp"
-#include "net/datastructures/containers/GenericObjectList.hpp"
+#include "networks/_impl/containers/GenericObjectList.hpp"
 #include "objects/Vertex.hpp"
 #include "generation/EvolutionModel.hpp"
 
@@ -92,7 +92,7 @@ evolve(
         size_t n = layer_idx.at(layer_names.at(idx));
         available_actors[n] = GenericObjectList<Vertex>();
 
-        for (auto actor: *net->vertices())
+        for (auto actor: *net->actors())
         {
             available_actors[n].add(actor);
         }

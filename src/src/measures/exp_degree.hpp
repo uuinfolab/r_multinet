@@ -1,8 +1,3 @@
-/**
- * History:
- * - 2020.01.28 file created.
- */
-
 #ifndef UU_MEASURES_EXPDEGREE_H_
 #define UU_MEASURES_EXPDEGREE_H_
 

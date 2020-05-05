@@ -1,7 +1,3 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
 #include "networks/WeightedNetwork.hpp"
 
 namespace uu {
@@ -14,11 +10,13 @@ WeightedNetwork(
     bool allows_loops
 ) : super(name, dir, allows_loops)
 {
-    auto w_attr = core::Attribute::create(KWEIGHT_ATTR_NAME, core::AttributeType::DOUBLE);
+
+    auto w_attr = core::Attribute::create(kWEIGHT_ATTR_NAME, core::AttributeType::DOUBLE);
 
     edges()->attr()->add(std::move(w_attr));
 
 }
+
 
 void
 WeightedNetwork::
@@ -27,20 +25,19 @@ set_weight(
     double w
 )
 {
-    edges()->attr()->set_double(e, KWEIGHT_ATTR_NAME, w);
+    edges()->attr()->set_double(e, kWEIGHT_ATTR_NAME, w);
 }
 
-/**
- * Sets the weight of an edge.
- */
+
 core::Value<double>
 WeightedNetwork::
 get_weight(
     const Edge* e
 ) const
 {
-    return edges()->attr()->get_double(e, KWEIGHT_ATTR_NAME);
+    return edges()->attr()->get_double(e, kWEIGHT_ATTR_NAME);
 }
+
 
 bool
 WeightedNetwork::
@@ -50,14 +47,6 @@ is_weighted(
     return true;
 }
 
-
-std::string
-WeightedNetwork::
-summary(
-) const
-{
-    return "WeightedNetwork(" + std::to_string(vertices()->size()) + "," + std::to_string(edges()->size()) + ")";
-}
 
 }
 }

@@ -1,10 +1,5 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
-#ifndef UU_NET_DATASTRUCTURES_OBJECTS_VERTEX_H_
-#define UU_NET_DATASTRUCTURES_OBJECTS_VERTEX_H_
+#ifndef UU_OBJECTS_VERTEX_H_
+#define UU_OBJECTS_VERTEX_H_
 
 #include <string>
 #include <memory>
@@ -32,12 +27,11 @@ class
         const std::string& name
     );
 
-    static
+    /*static
     std::shared_ptr<const Vertex>
     create(
         const key_type& name
-    );
-
+    );*/
 
     /** Output function, presenting a complete description of the vertex. */
     std::string

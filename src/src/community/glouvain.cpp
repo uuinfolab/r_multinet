@@ -1,5 +1,5 @@
 #include "community/glouvain.hpp"
-#include "mnet/community/cutils.hpp"
+#include "community/_impl/cutils.hpp"
 
 namespace uu {
 namespace net {

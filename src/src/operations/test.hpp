@@ -1,8 +1,3 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
 #ifndef UU_NET_MEASURES_TEST_H_
 #define UU_NET_MEASURES_TEST_H_
 

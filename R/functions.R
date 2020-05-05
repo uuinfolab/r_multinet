@@ -71,7 +71,7 @@ values2graphics <- function(values, output = "color") {
 # (Rudimentary) plotting function.
     
 plot.Rcpp_RMLNetwork <- function(x,
-layout=NULL, grid=NULL, mai=.1,
+layout=NULL, grid=NULL, mai=c(.1,.1,.1,.1),
 layers=NULL,
 vertex.shape=21, vertex.cex=1, vertex.size=vertex.cex, vertex.color=NULL,
 vertex.labels=NULL, vertex.labels.pos=3, vertex.labels.offset=.5, vertex.labels.cex=1,
@@ -80,15 +80,60 @@ edge.arrow.length=0.1, edge.arrow.angle=20,
 legend.x=NULL, legend.y=NULL, legend.pch=20,
 legend.cex=.5, legend.inset=c(0, 0),
 com=NULL, com.cex=1, ...) {
+   
+   # some sub-functions:
+   # functions to compute planar coordinates
+   x_coord <- function(xyz_coord) {
+       xyz_coord$x+xyz_coord$z%%num.cols*width
+   }
+   y_coord <- function(xyz_coord) {
+       xyz_coord$y+(num.rows-1-xyz_coord$z %/% num.cols)*height
+   }
+   
+   # function to draw an edge
+   draw_edge <- function(d) {
+       if (d['dir']==0) {
+           segments(x_coord(layout[d['from'],]),
+           y_coord(layout[d['from'],]),x_coord(layout[d['to'],]),y_coord(layout[d['to'],]), lty=edge.type, lwd=edge.width, col=edge.color)
+       }
+       if (d['dir']==1) {
+           arrows(x_coord(layout[d['from'],]),
+           y_coord(layout[d['from'],]),x_coord(layout[d['to'],]),y_coord(layout[d['to'],]), length=edge.arrow.length, angle=edge.arrow.angle, lty=edge.type, lwd=edge.width, col=edge.color)
+       }
+   }
+   
+   # function to draw an area, used for communities or other groups
+   draw.areas <- function(d) {
+       xc <- x_coord(layout[d$aid,])
+       yc <- y_coord(layout[d$aid,])
+       # add some margin around nodes
+       os <- par()$cxy*com.cex
+       xc <- c(xc+os[1]/2,xc+os[1]/2,xc-os[1]/2,xc-os[1]/2)
+       yc <- c(yc+os[2]/2,yc-os[2]/2,yc+os[2]/2,yc-os[2]/2)
+       
+       extreme.points = chull(xc,yc)
+       xspline(xc[extreme.points],yc[extreme.points],open=F,shape=1,border=NA,col=palette[d$cid+1])
+   }
+   
+    # checking argument: mai
+    if (length(mai) != 4) {
+        stop("argument mai must contain four values")
+    }
+    if (max(mai) > 1) {
+        warning("too high values for argument mai?")
+    }
     
+    # checking argument: vertex.shape
     if (min(vertex.shape)<21 | max(vertex.shape)>25) {
         stop("vertex shapes not supported; only values between 21 and 25 allowed")
     }
     
+    # computing layout if needed
     if (is.null(layout)) {
         layout <- layout_multiforce_ml(x)
     }
     
+    # option to select and reorder the layers
     if (!is.null(layers)) {
         layer_map <- match(layers_ml(x), layers) - 1
         layout <- cbind(layout[,1:4], z=layer_map[layout$z+1])
@@ -99,39 +144,35 @@ com=NULL, com.cex=1, ...) {
     }
     num_layers <- length(layers)
     
+    # grid, num columns, computing extreme coordinates...
     num.cols = num_layers
     num.rows = 1
     if (!is.null(grid)) {
         if (!length(grid)==2) stop("argument grid must have two elements")
+        if (grid[1]*grid[2]<num_layers) stop("insufficient number of grid cells (< num_layers)")
         num.rows = grid[1]
         num.cols = grid[2]
     }
     
-    x_coord <- function(xyz_coord) {
-        xyz_coord$x+xyz_coord$z%%num.cols*width
-    }
-   
-   y_coord <- function(xyz_coord) {
-       xyz_coord$y+(num.rows-1-xyz_coord$z %/% num.cols)*height
-   }
-   
+
     #
     x.min = min(layout$x)
     y.min = min(layout$y)
     x.max = max(layout$x)
     y.max = max(layout$y)
     
-    width = x.max-x.min + mai*(x.max-x.min);
-    x.min = x.min - mai/2*(x.max-x.min)
-    height = y.max-y.min + mai*(y.max-y.min);
-    y.min = y.min - mai/2*(y.max-y.min)
+    width = x.max-x.min + (mai[1]+mai[3])*(x.max-x.min);
+    x.min = x.min - mai[1]*(x.max-x.min)
+    height = y.max-y.min + (mai[2]+mai[4])*(y.max-y.min);
+    y.min = y.min - mai[4]*(y.max-y.min)
     
-plot(NA,type="n",xlim=c(x.min,x.min+width*num.cols),ylim=c(y.min,y.min+height*num.rows),xaxt="n",yaxt="n",bty="n",xlab="",ylab="")
+    #plot frame
+    plot(NA,type="n",xlim=c(x.min,x.min+width*num.cols),ylim=c(y.min,y.min+height*num.rows),
+        xaxt="n",yaxt="n",bty="n",xlab="",ylab="")
 
     # draw grid
     segments((0:num.cols*width)+x.min,y.min,(0:num.cols*width)+x.min,y.min+height*num.rows)
     segments(x.min,(0:num.rows*height)+y.min,x.min+width*num.cols,(0:num.rows*height)+y.min)
-    
     
     # color palette
     if (is.null(vertex.color)) {
@@ -160,33 +201,12 @@ plot(NA,type="n",xlim=c(x.min,x.min+width*num.cols),ylim=c(y.min,y.min+height*nu
         else {
             palette <- adjustcolor(brewer.pal(num.com, "Set3"), alpha.f = .4)
         }
-        draw.areas <- function(d) {
-            xc <- x_coord(layout[d$aid,])
-            yc <- y_coord(layout[d$aid,])
-            # add some margin around nodes
-            os <- par()$cxy*com.cex
-            xc <- c(xc+os[1]/2,xc+os[1]/2,xc-os[1]/2,xc-os[1]/2)
-            yc <- c(yc+os[2]/2,yc-os[2]/2,yc+os[2]/2,yc-os[2]/2)
-                
-            extreme.points = chull(xc,yc)
-        xspline(xc[extreme.points],yc[extreme.points],open=F,shape=1,border=NA,col=palette[d$cid+1])
-        }
         c.list <- get_community_list_ml(com,x);
         lapply(c.list, draw.areas)
     }
     
     # draw edges
     e <- edges_idx_ml(x)
-    draw_edge <- function(d) {
-        if (d['dir']==0) {
-        segments(x_coord(layout[d['from'],]),
-        y_coord(layout[d['from'],]),x_coord(layout[d['to'],]),y_coord(layout[d['to'],]), lty=edge.type, lwd=edge.width, col=edge.color)
-        }
-        if (d['dir']==1) {
-        arrows(x_coord(layout[d['from'],]),
-        y_coord(layout[d['from'],]),x_coord(layout[d['to'],]),y_coord(layout[d['to'],]), length=edge.arrow.length, angle=edge.arrow.angle, lty=edge.type, lwd=edge.width, col=edge.color)
-        }
-    }
     apply(e,1,draw_edge)
 
     layout <- layout[complete.cases(layout), ]

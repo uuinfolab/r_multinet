@@ -24,6 +24,15 @@ install.packages("multinet")
 
 TBD
 
+```sh
+install.packages("devtools")
+```
+devtools::check()
+
+git submodule update --remote --merge
+git commit
+(for R: copy_uunet_files.sh)
+
 ## Contact
 
 For any inquiries regarding this repository you can contact <matteo.magnani@it.uu.se>.

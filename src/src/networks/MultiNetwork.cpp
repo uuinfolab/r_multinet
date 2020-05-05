@@ -1,9 +1,6 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
 #include "networks/MultiNetwork.hpp"
-#include "net/datastructures/observers/NoLoopCheckObserver.hpp"
+
+#include "networks/_impl/observers/NoLoopCheckObserver.hpp"
 
 namespace uu {
 namespace net {
@@ -46,7 +43,6 @@ vertices(
 }
 
 
-
 const AttrVertexStore*
 MultiNetwork::
 vertices(
@@ -63,7 +59,6 @@ edges(
 {
     return data_->edges();
 }
-
 
 
 const AttrMultiEdgeStore*
@@ -84,6 +79,14 @@ is_directed(
 }
 
 
+bool
+MultiNetwork::
+allows_loops(
+) const
+{
+    return data_->allows_loops();
+}
+
 
 bool
 MultiNetwork::
@@ -103,7 +106,6 @@ is_probabilistic(
 }
 
 
-
 bool
 MultiNetwork::
 is_temporal(
@@ -111,7 +113,6 @@ is_temporal(
 {
     return data_->is_temporal();
 }
-
 
 
 bool
@@ -123,32 +124,12 @@ is_attributed(
 }
 
 
-
 bool
 MultiNetwork::
 allows_multi_edges(
 ) const
 {
     return data_->allows_multi_edges();
-}
-
-
-
-bool
-MultiNetwork::
-allows_loops(
-) const
-{
-    return data_->allows_loops();
-}
-
-
-std::string
-MultiNetwork::
-summary(
-) const
-{
-    return "MultiNetwork(" + std::to_string(vertices()->size()) + "," + std::to_string(edges()->size()) + ")";
 }
 
 }

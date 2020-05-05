@@ -1,8 +1,3 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
 #include "core/exceptions/assert_not_null.hpp"
 #include "core/exceptions/OperationNotSupportedException.hpp"
 #include "generation/empty_copy.hpp"

@@ -1,8 +1,5 @@
-/**
- */
-
-#ifndef UU_MNET_GENERATION_EREVOLUTIONMODEL_H_
-#define UU_MNET_GENERATION_EREVOLUTIONMODEL_H_
+#ifndef UU_GENERATION_EREVOLUTIONMODEL_H_
+#define UU_GENERATION_EREVOLUTIONMODEL_H_
 
 #include "core/exceptions/WrongParameterException.hpp"
 #include "generation/EvolutionModel.hpp"

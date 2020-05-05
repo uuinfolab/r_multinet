@@ -1,7 +1,7 @@
 #ifndef UU_MNET_COMMUNITY_MLCPMCOMMUNITY_H_
 #define UU_MNET_COMMUNITY_MLCPMCOMMUNITY_H_
 
-#include "mnet/datastructures/objects/MultiplexClique.hpp"
+#include "objects/MultiplexClique.hpp"
 #include "community/VertexLayerCommunity.hpp"
 
 

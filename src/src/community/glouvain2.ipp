@@ -1,7 +1,6 @@
 #include <unordered_map>
 #include <vector>
-#include "net/community/glouvain_utils.hpp"
-#include "net/community/GMetaNetwork.hpp"
+#include "community/_impl/GMetaNetwork.hpp"
 #include "community/louvain.hpp"
 
 namespace uu {

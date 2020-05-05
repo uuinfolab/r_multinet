@@ -1,8 +1,3 @@
-/**
- * History:
- * - 2020.01.04 file created.
- */
-
 #include "core/exceptions/assert_not_null.hpp"
 
 #include <stack>

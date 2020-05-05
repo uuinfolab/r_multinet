@@ -1,5 +1,7 @@
 # version 3.2.1
 
+- added some argument checks to plot_ml
+
 # version 3.2
 
 - add_edges_ml now automatically adds the corresponding actors and vertices if they do not exist

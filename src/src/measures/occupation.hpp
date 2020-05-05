@@ -1,19 +1,5 @@
-/**
- * Social Network Analysis measures for multiplex networks.
- * TESTED:
- * Node based: degree, neighborhood, exclusive neighborhood, relevance, exclusive relevance
- * Layer based: similarity
- *
- * TO BE CONSOLIDATED:
- * Distance based: Pareto distance, Pareto betweenness
- * Group based: modularity
- *
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
-#ifndef MNET_MEASURES_OCCUPATION_H_
-#define MNET_MEASURES_OCCUPATION_H_
+#ifndef UU_MEASURES_OCCUPATION_H_
+#define UU_MEASURES_OCCUPATION_H_
 
 #include "objects/Vertex.hpp"
 #include "objects/EdgeMode.hpp"

@@ -8,8 +8,8 @@
  * 3) external evolution (the layer imports nodes and edges from another layer)
  */
 
-#ifndef UU_MNET_GENERATION_VERTEXSELECTION_H_
-#define UU_MNET_GENERATION_VERTEXSELECTION_H_
+#ifndef UU_GENERATION_VERTEXSELECTION_H_
+#define UU_GENERATION_VERTEXSELECTION_H_
 
 
 namespace uu {

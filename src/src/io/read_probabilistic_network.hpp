@@ -1,11 +1,10 @@
-
-#ifndef UU_NET_IO_READPROBABILISTICNETWORK_H_
-#define UU_NET_IO_READPROBABILISTICNETWORK_H_
+#ifndef UU_IO_READPROBABILISTICNETWORK_H_
+#define UU_IO_READPROBABILISTICNETWORK_H_
 
 #include <string>
 #include <memory>
 #include "networks/ProbabilisticNetwork.hpp"
-#include "net/io/read_common.hpp"
+#include "io/_impl/read_common.hpp"
 
 namespace uu {
 namespace net {

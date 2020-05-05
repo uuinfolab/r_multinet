@@ -1,6 +1,3 @@
-/**
- */
-
 #ifndef UU_NET_GENERATION_UTILS_H_
 #define UU_NET_GENERATION_UTILS_H_
 

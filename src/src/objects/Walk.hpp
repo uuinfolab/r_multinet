@@ -1,10 +1,5 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
-#ifndef UU_NET_DATASTRUCTURE_CONNECTIVITY_WALK_
-#define UU_NET_DATASTRUCTURE_CONNECTIVITY_WALK_
+#ifndef UU_OBJECTS_WALK_
+#define UU_OBJECTS_WALK_
 
 #include <list>
 #include <iostream>
@@ -16,8 +11,8 @@ namespace net {
 
 /**
  * A walk is a non-empty list (v0, e1, v1, ..., en, vn) where each edge has his preceding and
- * following vertices as end vertices. For directed edges, edge directionality must allow to traverse
- * the walk from left to right.
+ * following vertices as end vertices. For directed edges, edge directionality must allow to
+ * traverse the walk from left to right.
  */
 class Walk
 {

@@ -1,10 +1,5 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
-#ifndef UU_NET_DATASTRUCTURES_OBJECTS_TRIAD_H_
-#define UU_NET_DATASTRUCTURES_OBJECTS_TRIAD_H_
+#ifndef UU_OBJECTS_TRIAD_H_
+#define UU_OBJECTS_TRIAD_H_
 
 #include <set>
 #include "objects/Vertex.hpp"
@@ -13,7 +8,7 @@ namespace uu {
 namespace net {
 
 /**
- * A pair of vertices
+ * Three vertices
  */
 class
     Triad :
@@ -21,6 +16,7 @@ class
 {
   private:
     typedef std::set<const Vertex*> super;
+
   public:
 
     /** Constructor. */
@@ -44,7 +40,7 @@ class
     std::set<const Vertex*>::const_iterator
     find(const Vertex*& val) const;
 
-    /** Output function, presenting a complete description of the dyad. */
+    /** Output function, presenting a complete description of the triad. */
     std::string
     to_string(
     ) const;

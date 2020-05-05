@@ -1,7 +1,3 @@
-/**
- *
- */
-
 #ifndef UU_UTILS_SUMMARY_H_
 #define UU_UTILS_SUMMARY_H_
 
@@ -12,7 +8,7 @@ namespace uu {
 namespace net {
 
 /**
- * Returns a string summarizing the input network.
+ * Returns a string summarizing the input network that can be printed on a single line.
  */
 template<typename G>
 std::string

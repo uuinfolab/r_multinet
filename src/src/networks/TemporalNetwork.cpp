@@ -1,7 +1,3 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
 #include "networks/TemporalNetwork.hpp"
 
 namespace uu {
@@ -14,11 +10,12 @@ TemporalNetwork(
     bool allows_loops
 ) : super(name, dir, allows_loops)
 {
-    auto t_attr = core::Attribute::create(KTIME_ATTR_NAME, core::AttributeType::TIME);
+    auto t_attr = core::Attribute::create(kTIME_ATTR_NAME, core::AttributeType::TIME);
 
     edges()->attr()->add(std::move(t_attr));
 
-    edges()->attr()->add_index(KTIME_ATTR_NAME);
+    // this index allows quick access to edges based on temporal criteria
+    edges()->attr()->add_index(kTIME_ATTR_NAME);
 
 }
 
@@ -29,36 +26,37 @@ set_time(
     core::Time t
 )
 {
-    edges()->attr()->set_time(e, KTIME_ATTR_NAME, t);
+    edges()->attr()->set_time(e, kTIME_ATTR_NAME, t);
 }
 
-/**
- * Sets the weight of an edge.
- */
+
 core::Value<core::Time>
 TemporalNetwork::
 get_time(
     const Edge* e
 ) const
 {
-    return edges()->attr()->get_time(e, KTIME_ATTR_NAME);
+    return edges()->attr()->get_time(e, kTIME_ATTR_NAME);
 }
+
 
 core::Value<core::Time>
 TemporalNetwork::
 get_min_time(
 ) const
 {
-    return edges()->attr()->get_min_time(KTIME_ATTR_NAME);
+    return edges()->attr()->get_min_time(kTIME_ATTR_NAME);
 }
+
 
 core::Value<core::Time>
 TemporalNetwork::
 get_max_time(
 ) const
 {
-    return edges()->attr()->get_max_time(KTIME_ATTR_NAME);
+    return edges()->attr()->get_max_time(kTIME_ATTR_NAME);
 }
+
 
 bool
 TemporalNetwork::
@@ -68,14 +66,6 @@ is_temporal(
     return true;
 }
 
-
-std::string
-TemporalNetwork::
-summary(
-) const
-{
-    return "TemporalNetwork(" + std::to_string(vertices()->size()) + "," + std::to_string(edges()->size()) + ")";
-}
 
 }
 }
