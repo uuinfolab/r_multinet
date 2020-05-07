@@ -12,6 +12,8 @@
 #ifndef EIGEN_SPARSE_LU_H
 #define EIGEN_SPARSE_LU_H
 
+#include <sstream>
+
 namespace Eigen {
 
 template <typename _MatrixType, typename _OrderingType = COLAMDOrdering<typename _MatrixType::StorageIndex> > class SparseLU;
