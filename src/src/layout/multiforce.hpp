@@ -37,6 +37,6 @@ multiforce(
 }
 }
 
-#import "multiforce.ipp"
+#include "multiforce.ipp"
 
 #endif

@@ -11,7 +11,9 @@
 #include "rcpp_utils.h"
 
 #include "operations/union.hpp"
+#include "operations/project.hpp"
 #include "community/glouvain.hpp"
+#include "community/glouvain2.hpp"
 #include "community/abacus.hpp"
 #include "community/infomap.hpp"
 #include "community/ml-cpm.hpp"
@@ -501,20 +503,6 @@ numEdges(
         }
     }
 
-    for (auto layer1: layers1)
-    {
-        for (auto layer2: layers2)
-        {
-            if (layer2<layer1)
-            {
-                continue;
-            }
-
-            num_edges += mnet->interlayer_edges()->get(layer1,layer2)->size();
-
-        }
-    }
-
     return num_edges;
 }
 
@@ -685,23 +673,28 @@ addNodes(
     CharacterVector a = vertices(0);
     CharacterVector l = vertices(1);
 
-    // New in v3.1: automatically add actors
     for (size_t i=0; i<a.size(); i++)
     {
         auto actor_name = std::string(a[i]);
         mnet->actors()->add(actor_name);
     }
-    // weN
     
     for (size_t i=0; i<vertices.nrow(); i++)
     {
         auto actor = mnet->actors()->get(std::string(a(i)));
 
+        if (!actor)
+        {
+            actor = mnet->actors()->add(std::string(a(i)));
+        }
+        
         auto layer = mnet->layers()->get(std::string(l(i)));
 
         if (!layer)
         {
-            stop("cannot find layer " + std::string(l(i)));
+            auto dir = uu::net::EdgeDir::UNDIRECTED;
+            auto layer_ = std::make_unique<G>(std::string(l(i)), dir, true);
+            layer = mnet->layers()->add(std::move(layer_));
         }
 
         layer->vertices()->add(actor);
@@ -721,30 +714,29 @@ addEdges(
     CharacterVector l_to = edges(3);
 
     
-    // New in v3.2: automatically add actors
-    for (size_t i=0; i<a_from.size(); i++)
-    {
-        auto actor_name = std::string(a_from[i]);
-        mnet->actors()->add(actor_name);
-    }
-    for (size_t i=0; i<a_to.size(); i++)
-    {
-        auto actor_name = std::string(a_to[i]);
-        mnet->actors()->add(actor_name);
-    }
-    // weN
-    
     for (size_t i=0; i<edges.nrow(); i++)
     {
         auto actor1 = mnet->actors()->get(std::string(a_from(i)));
 
+        if (!actor1)
+        {
+            actor1 = mnet->actors()->add(std::string(a_from(i)));
+        }
+        
         auto actor2 = mnet->actors()->get(std::string(a_to(i)));
 
+        if (!actor2)
+        {
+            actor2 = mnet->actors()->add(std::string(a_to(i)));
+        }
+        
         auto layer1 = mnet->layers()->get(std::string(l_from(i)));
 
         if (!layer1)
         {
-            stop("cannot find layer " + std::string(l_from(i)));
+            auto dir = uu::net::EdgeDir::UNDIRECTED;
+            auto layer_ = std::make_unique<G>(std::string(l_from(i)), dir, true);
+            layer1 = mnet->layers()->add(std::move(layer_));
         }
         
         layer1->vertices()->add(actor1);
@@ -753,17 +745,13 @@ addEdges(
 
         if (!layer2)
         {
-            stop("cannot find layer " + std::string(l_to(i)));
+            auto dir = uu::net::EdgeDir::UNDIRECTED;
+            auto layer_ = std::make_unique<G>(std::string(l_to(i)), dir, true);
+            layer2 = mnet->layers()->add(std::move(layer_));
         }
 
         layer2->vertices()->add(actor2);
         
-        /*
-        auto vertex1 = mnet->get_vertex(actor1,layer1);
-        if (!vertex1) stop("cannot find vertex " + actor1->name + " " + layer1->name);
-        auto vertex2 = mnet->get_vertex(actor2,layer2);
-        if (!vertex2) stop("cannot find vertex " + actor2->name + " " + layer2->name);
-         */
 
         if (layer1==layer2)
         {
@@ -1751,24 +1739,26 @@ flatten(
 }
 
 
-/*
+
 void project(
     RMLNetwork& rmnet,
     const std::string& new_layer,
     const std::string& layer_name1,
     const std::string& layer_name2,
     const std::string& method) {
-auto mnet = rmnet.get_mlnet();
-auto layer1 = mnet->layers()->get(layer_name1);
-auto layer2 = mnet->layers()->get(layer_name2);
-if (!layer1 || !layer2)
-    stop("Layer not found");
-if (method=="clique")
-    project_unweighted(mnet,new_layer,layer1,layer2);
-else stop("Unexpected value: algorithm");
+    auto mnet = rmnet.get_mlnet();
+    auto layer1 = mnet->layers()->get(layer_name1);
+    auto layer2 = mnet->layers()->get(layer_name2);
+    if (!layer1 || !layer2)
+        stop("Layer not found");
+    if (method=="clique")
+    {
+        auto target = std::make_unique<G>(new_layer, uu::net::EdgeDir::UNDIRECTED, true);
+        auto target_ptr = mnet->layers()->add(std::move(target));
+        uu::net::project_unweighted(mnet, layer1, layer2, target_ptr);
+    }
+    else stop("Unexpected value: algorithm");
 }
-
- */
 
 // MEASURES
 
@@ -2765,6 +2755,19 @@ glouvain_ml(
 
     auto com_struct = uu::net::generalized_louvain<M,G>(mnet, gamma, omega, limit);
 
+    return to_dataframe(com_struct.get());
+}
+
+DataFrame
+glouvain2_ml(
+    const RMLNetwork& rmnet,
+    double omega
+)
+{
+    auto mnet = rmnet.get_mlnet();
+    
+    auto com_struct = uu::net::glouvain2<M>(mnet, omega);
+    
     return to_dataframe(com_struct.get());
 }
 

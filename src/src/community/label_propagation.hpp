@@ -22,6 +22,6 @@ label_propagation(
 }
 }
 
-#import "label_propagation.ipp"
+#include "label_propagation.ipp"
 
 #endif

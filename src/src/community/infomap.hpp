@@ -37,6 +37,6 @@ infomap(const M* net,
 }
 }
 
-#import "infomap.ipp"
+#include "infomap.ipp"
 
 #endif

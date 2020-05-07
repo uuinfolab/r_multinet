@@ -301,7 +301,6 @@ flatten(
 );
 
 
-/*
 void
 project(
     RMLNetwork& rmnet,
@@ -312,7 +311,7 @@ project(
 
 // MEASURES
 
- */
+
 NumericVector
 degree_ml(
     const RMLNetwork&,
@@ -430,6 +429,12 @@ glouvain_ml(
     double gamma,
     double omega,
     int limit
+);
+
+DataFrame
+glouvain2_ml(
+    const RMLNetwork&,
+    double omega
 );
 
 DataFrame

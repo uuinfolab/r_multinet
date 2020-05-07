@@ -27,6 +27,6 @@ generalized_louvain(
 }
 }
 
-#import "glouvain.ipp"
+#include "glouvain.ipp"
 
 #endif

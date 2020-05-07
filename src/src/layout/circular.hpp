@@ -17,6 +17,6 @@ circular(
 }
 }
 
-#import "circular.ipp"
+#include "circular.ipp"
 
 #endif
