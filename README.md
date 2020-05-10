@@ -22,16 +22,37 @@ install.packages("multinet")
 
 ## Contribute
 
-TBD
+To modify the library, one should consider that a large part of its code is written in C++ and comes from a different repository: https://bitbucket.org/uuinfolab/uunet/.
+
+If you only want to modify the functions written in R, this can be done directly in this repository. These functions are in the R/ directory:
+
+- datasets.R contains functions to load existing datasets, such as ml_aucs(), whose data is stored in inst/extdata.
+- igraph.R contains the functions: as.igraph(), as.list() and add_igraph_layer_ml().
+- functions.R contains print(), str(), summary(), values2graphics() and plot().
+
+After modifying the functions, you can launch R from the main folder in the repository and install the new version including your changes (the first command is necessary only if you do not have devtools installed yet):
 
 ```sh
 install.packages("devtools")
-```
+library(devtools)
 devtools::check()
+devtools::install()
+```
 
+The directory src/ contains the files exporting C++ functions from uunet to R, using Rcpp. These functions can also be updated directly in this repository:
+
+- rcpp_module_definition.cpp contains the definitions of the R functions implemented in C++.
+- r_functions.cpp contains the functions referenced in rcpp_module_definition.cpp, themselves calling functions from uunet.
+- rcpp_utils.cpp contains some utility functions automating some common tasks used in r_functions.cpp.
+
+If you need to modify any of the files in the directories eclat/, eigen3/, infomap/ and src/, they are imported from uunet and should modified in that repository. One can get the latest code from uunet by running:
+
+```sh
 git submodule update --remote --merge
-git commit
-(for R: copy_uunet_files.sh)
+copy_uunet_files.sh
+```
+
+The first command loads the latest code from uunet into ext/, the second command copies the needed files from ext/ into src/ and also produces the src/Makevars and src/Makevars.win files.
 
 ## Contact
 
