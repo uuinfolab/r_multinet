@@ -19,17 +19,17 @@ namespace uu {
 namespace net {
 
 
-std::tuple<std::unique_ptr<GMetaNetwork>, std::map<const Vertex*, std::pair<const Vertex*, const Network*>>, std::vector<std::unique_ptr<const Vertex>>>
-        convert(
-            const MultilayerNetwork* g,
-            double omega
-        );
+std::tuple<std::unique_ptr<GMetaNetwork>, std::map<const Vertex*, MLVertex>, std::vector<std::unique_ptr<const Vertex>>>
+convert(
+    const MultilayerNetwork* g,
+    double omega
+);
 
-std::tuple<std::unique_ptr<GMetaNetwork>, std::map<const Vertex*, std::pair<const Vertex*, const Network*>>, std::vector<std::unique_ptr<const Vertex>>>
-        convert(
-            const OrderedMultiplexNetwork* g,
-            double omega
-        );
+std::tuple<std::unique_ptr<GMetaNetwork>, std::map<const Vertex*, MLVertex>, std::vector<std::unique_ptr<const Vertex>>>
+convert(
+    const OrderedMultiplexNetwork* g,
+    double omega
+);
 
 void
 expand(
@@ -39,10 +39,10 @@ expand(
     Community<const Vertex*>* com
 );
 
-std::unique_ptr<CommunityStructure<Community<const Vertex*>>>
-communities(
-    const std::vector<std::unique_ptr<GMetaNetwork>>& levels
-);
+std::unique_ptr<CommunityStructure<Network>>
+        communities(
+            const std::vector<std::unique_ptr<GMetaNetwork>>& levels
+        );
 
 std::unique_ptr<GMetaNetwork>
 aggregate(

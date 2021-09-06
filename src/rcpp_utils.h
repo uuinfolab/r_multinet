@@ -1,11 +1,3 @@
-/**
- *
- *
- * History:
- * - 2018.09.12 updated to version 2.0 C++ uunet library API.
- * - 2014.07.29 file created.
- */
-
 #ifndef UU_R_MULTINET_RCPP_UTILS_H_
 #define UU_R_MULTINET_RCPP_UTILS_H_
 
@@ -16,19 +8,25 @@
 #include "objects/Vertex.hpp"
 #include "objects/Edge.hpp"
 #include "networks/Network.hpp"
-#include "community/VertexLayerCommunity.hpp"
+#include "community/Community.hpp"
 #include "networks/MultilayerNetwork.hpp"
 #include "r_functions.h"
 
+std::vector<const uu::net::Network*>
+resolve_const_layers(
+    const uu::net::MultilayerNetwork* mnet,
+    const Rcpp::CharacterVector& names
+);
+
 std::vector<uu::net::Network*>
 resolve_layers(
-    const uu::net::MultilayerNetwork* mnet,
+    uu::net::MultilayerNetwork* mnet,
     const Rcpp::CharacterVector& names
 );
 
 std::unordered_set<uu::net::Network*>
 resolve_layers_unordered(
-    const uu::net::MultilayerNetwork* mnet,
+    uu::net::MultilayerNetwork* mnet,
     const Rcpp::CharacterVector& names
 );
 
@@ -50,17 +48,29 @@ resolve_actors_unordered(
     const Rcpp::CharacterVector& names
 );
 
-std::vector<std::pair<const uu::net::Vertex*, uu::net::Network*>>
-        resolve_vertices(
+std::vector<std::pair<const uu::net::Vertex*, const uu::net::Network*>>
+        resolve_const_vertices(
             const uu::net::MultilayerNetwork* mnet,
             const Rcpp::DataFrame& vertex_matrix
         );
 
-std::vector<std::tuple<const uu::net::Vertex*, uu::net::Network*, const uu::net::Vertex*, uu::net::Network*>>
-        resolve_edges(
+std::vector<std::pair<const uu::net::Vertex*, uu::net::Network*>>
+resolve_vertices(
+    uu::net::MultilayerNetwork* mnet,
+    const Rcpp::DataFrame& vertex_matrix
+);
+
+std::vector<std::tuple<const uu::net::Vertex*, const uu::net::Network*, const uu::net::Vertex*, const uu::net::Network*>>
+        resolve_const_edges(
             const uu::net::MultilayerNetwork* mnet,
             const Rcpp::DataFrame& edge_matrix
         );
+
+std::vector<std::tuple<const uu::net::Vertex*, uu::net::Network*, const uu::net::Vertex*,  uu::net::Network*>>
+resolve_edges(
+    uu::net::MultilayerNetwork* mnet,
+    const Rcpp::DataFrame& edge_matrix
+);
 
 
 uu::net::EdgeMode
@@ -70,10 +80,10 @@ resolve_mode(
 
 Rcpp::DataFrame
 to_dataframe(
-    uu::net::CommunityStructure<uu::net::VertexLayerCommunity<const uu::net::Network>>* cs
+    uu::net::CommunityStructure<uu::net::MultilayerNetwork>* cs
 );
 
-std::unique_ptr<uu::net::CommunityStructure<uu::net::VertexLayerCommunity<const uu::net::Network>>>
+std::unique_ptr<uu::net::CommunityStructure<uu::net::MultilayerNetwork>>
 to_communities(
                const DataFrame& com,
                const uu::net::MultilayerNetwork* mnet

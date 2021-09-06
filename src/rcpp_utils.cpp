@@ -1,9 +1,48 @@
 #include "rcpp_utils.h"
+#include "objects/MLVertex.hpp"
 #include <algorithm>
+
+std::vector<const uu::net::Network*>
+resolve_const_layers(
+    const uu::net::MultilayerNetwork* mnet,
+    const Rcpp::CharacterVector& names
+)
+{
+    int result_size = names.size()?names.size():mnet->layers()->size();
+    std::vector<const uu::net::Network*> res(result_size);
+
+    if (names.size()==0)
+    {
+        int i=0;
+
+        for (auto layer: *mnet->layers())
+        {
+            res[i] = layer;
+            i++;
+        }
+    }
+
+    else
+    {
+        for (int i=0; i<names.size(); ++i)
+        {
+            auto layer = mnet->layers()->get(std::string(names[i]));
+
+            if (!layer)
+            {
+                Rcpp::stop("cannot find layer " + std::string(names[i]));
+            }
+
+            res[i] = layer;
+        }
+    }
+
+    return res;
+}
 
 std::vector<uu::net::Network*>
 resolve_layers(
-    const uu::net::MultilayerNetwork* mnet,
+    uu::net::MultilayerNetwork* mnet,
     const Rcpp::CharacterVector& names
 )
 {
@@ -39,9 +78,10 @@ resolve_layers(
     return res;
 }
 
+
 std::unordered_set<uu::net::Network*>
 resolve_layers_unordered(
-    const uu::net::MultilayerNetwork* mnet,
+    uu::net::MultilayerNetwork* mnet,
     const Rcpp::CharacterVector& names
 )
 {
@@ -182,9 +222,48 @@ resolve_actors_unordered(
     return res;
 }
 
+std::vector<std::pair<const uu::net::Vertex*, const uu::net::Network*>>
+        resolve_const_vertices(
+            const uu::net::MultilayerNetwork* mnet,
+            const Rcpp::DataFrame& vertex_matrix
+        )
+{
+    std::vector<std::pair<const uu::net::Vertex*, const uu::net::Network*>> res(vertex_matrix.nrow());
+    CharacterVector a = vertex_matrix(0);
+    CharacterVector l = vertex_matrix(1);
+
+    for (int i=0; i<vertex_matrix.nrow(); i++)
+    {
+        auto actor = mnet->actors()->get(std::string(a(i)));
+
+        if (!actor)
+        {
+            Rcpp::stop("cannot find actor " + std::string(a(i)));
+        }
+
+        auto layer = mnet->layers()->get(std::string(l(i)));
+
+        if (!layer)
+        {
+            Rcpp::stop("cannot find layer " + std::string(l(i)));
+        }
+
+        int vertex = layer->vertices()->index_of(actor);
+
+        if (vertex == -1)
+        {
+            Rcpp::stop("cannot find actor " + actor->name + " on layer " + layer->name);
+        }
+
+        res[i] = std::make_pair(actor, layer);
+    }
+
+    return res;
+}
+
 std::vector<std::pair<const uu::net::Vertex*, uu::net::Network*>>
         resolve_vertices(
-            const uu::net::MultilayerNetwork* mnet,
+            uu::net::MultilayerNetwork* mnet,
             const Rcpp::DataFrame& vertex_matrix
         )
 {
@@ -221,9 +300,84 @@ std::vector<std::pair<const uu::net::Vertex*, uu::net::Network*>>
     return res;
 }
 
-std::vector<std::tuple<const uu::net::Vertex*, uu::net::Network*, const uu::net::Vertex*, uu::net::Network*>>
-        resolve_edges(
+
+std::vector<std::tuple<const uu::net::Vertex*, const uu::net::Network*, const uu::net::Vertex*, const uu::net::Network*>>
+        resolve_const_edges(
             const uu::net::MultilayerNetwork* mnet,
+            const Rcpp::DataFrame& edges
+        )
+{
+    std::vector<std::tuple<const uu::net::Vertex*, const uu::net::Network*, const uu::net::Vertex*, const uu::net::Network*>> res(edges.nrow());
+    CharacterVector a_from = edges(0);
+    CharacterVector l_from = edges(1);
+    CharacterVector a_to = edges(2);
+    CharacterVector l_to = edges(3);
+
+    for (int i=0; i<edges.nrow(); i++)
+    {
+        auto actor1 = mnet->actors()->get(std::string(a_from(i)));
+
+        if (!actor1)
+        {
+            Rcpp::stop("cannot find actor " + std::string(a_from(i)));
+        }
+
+        auto actor2 = mnet->actors()->get(std::string(a_to(i)));
+
+        if (!actor2)
+        {
+            Rcpp::stop("cannot find actor " + std::string(a_to(i)));
+        }
+
+        auto layer1 = mnet->layers()->get(std::string(l_from(i)));
+
+        if (!layer1)
+        {
+            Rcpp::stop("cannot find layer " + std::string(l_from(i)));
+        }
+
+        auto layer2 = mnet->layers()->get(std::string(l_to(i)));
+
+        if (!layer2)
+        {
+            Rcpp::stop("cannot find layer " + std::string(l_to(i)));
+        }
+
+        if (layer1 == layer2)
+        {
+            auto edge = layer1->edges()->get(actor1, actor2);
+
+            if (!edge)
+            {
+                Rcpp::stop("cannot find edge from " + actor1->to_string() + " to "
+                           + actor2->to_string() + " on layer " + layer1->name);
+            }
+
+            res[i] = std::tuple<const uu::net::Vertex*, const uu::net::Network*, const uu::net::Vertex*, const uu::net::Network*>(actor1, layer1, actor2, layer2);
+            
+        }
+
+        else
+        {
+            auto edge = mnet->interlayer_edges()->get(actor1, layer1, actor2, layer2);
+            
+            if (!edge)
+            {
+                Rcpp::stop("cannot find edge from " + actor1->to_string() + " on layer " +
+                           layer1->name + " to " + actor2->to_string() + " on layer " + layer2->name);
+            }
+
+            res[i] = std::tuple<const uu::net::Vertex*, const uu::net::Network*, const uu::net::Vertex*, const uu::net::Network*>(actor1, layer1, actor2, layer2);
+            
+        }
+    }
+
+    return res;
+}
+
+std::vector<std::tuple<const uu::net::Vertex*, uu::net::Network*, const uu::net::Vertex*,  uu::net::Network*>>
+        resolve_edges(
+            uu::net::MultilayerNetwork* mnet,
             const Rcpp::DataFrame& edges
         )
 {
@@ -324,22 +478,34 @@ resolve_mode(
 
 Rcpp::DataFrame
 to_dataframe(
-    uu::net::CommunityStructure<uu::net::VertexLayerCommunity<const uu::net::Network>>* cs
+    uu::net::CommunityStructure<uu::net::MultilayerNetwork>* cs
 )
 {
-
-    Rcpp::CharacterVector actor, layer;
-    Rcpp::NumericVector community_id;
-
-    int comm_id=0;
+    size_t num_rows = 0;
 
     for (auto com: *cs)
     {
         for (auto pair: *com)
         {
-            actor.push_back(pair.first->name);
-            layer.push_back(pair.second->name);
-            community_id.push_back(comm_id);
+            num_rows++;
+        }
+    }
+    
+    
+    Rcpp::CharacterVector actor(num_rows);
+    Rcpp::CharacterVector layer(num_rows);
+    Rcpp::NumericVector community_id(num_rows);
+
+    size_t comm_id = 0;
+    size_t row_num = 0;
+    for (auto com: *cs)
+    {
+        for (auto pair: *com)
+        {
+            actor[row_num] = pair.v->name;
+            layer[row_num] = pair.c->name;
+            community_id[row_num] = comm_id;
+            row_num++;
         }
 
         comm_id++;
@@ -352,7 +518,7 @@ to_dataframe(
            );
 }
 
-std::unique_ptr<uu::net::CommunityStructure<uu::net::VertexLayerCommunity<const uu::net::Network>>>
+std::unique_ptr<uu::net::CommunityStructure<uu::net::MultilayerNetwork>>
 to_communities(
                const DataFrame& com,
                const uu::net::MultilayerNetwork* mnet
@@ -362,7 +528,7 @@ to_communities(
     CharacterVector cs_layer = com["layer"];
     NumericVector cs_cid = com["cid"];
     
-    std::unordered_map<int, std::list<std::pair<const uu::net::Vertex*, const uu::net::Network*>> > result;
+    std::unordered_map<size_t, std::list<uu::net::MLVertex>> result;
     
     for (size_t i=0; i<com.nrow(); i++) {
         int comm_id = cs_cid[i];
@@ -371,19 +537,18 @@ to_communities(
         auto actor = mnet->actors()->get(std::string(cs_actor[i]));
         if (!actor) stop("cannot find actor " + std::string(cs_actor[i]) + " (community structure not compatible with this network?)");
         
-        auto iv = std::make_pair(actor, layer);
-        result[comm_id].push_back(iv);
+        result[comm_id].push_back(uu::net::MLVertex(actor,layer));
         
     }
     
     
         // build community structure
     
-    auto communities = std::make_unique<uu::net::CommunityStructure<uu::net::VertexLayerCommunity<const uu::net::Network>>>();
+    auto communities = std::make_unique<uu::net::CommunityStructure<uu::net::MultilayerNetwork>>();
     
     for (auto pair: result)
     {
-        auto c = std::make_unique<uu::net::VertexLayerCommunity<const uu::net::Network>>();
+        auto c = std::make_unique<uu::net::Community<uu::net::MultilayerNetwork>>();
         
         for (auto vertex_layer_pair: pair.second)
         {

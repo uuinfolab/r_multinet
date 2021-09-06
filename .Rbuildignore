@@ -1,4 +1,5 @@
 copy_uunet_files.sh
+copy_temp.sh
 ext/
 make/
 README.md

@@ -22,6 +22,9 @@ read_graph_type(
     std::string feat = graph_type_spec;
     core::to_upper_case(feat);
 
+    // new default value
+    graph_type.allows_loops=true;
+
     if (feat=="MULTI")
     {
         graph_type.allows_multi_edges=true;
@@ -66,11 +69,11 @@ read_graph_type(
 
     else if (feat=="LOOPS")
     {
-        graph_type.allows_loops=true;
     }
 
     else if (feat=="NO LOOPS")
     {
+        graph_type.allows_loops=false;
     }
 
     else
@@ -149,16 +152,16 @@ read_metadata(
         case GraphIOFileSection::VERTEX_ATTRIBUTES:
         {
             size_t from_idx = 0;
-            core::Attribute vertex_att = read_attr_def(fields, from_idx, csv.row_num());
-            meta.vertex_attributes.push_back(vertex_att);
+            auto vertex_att = read_attr_def(fields, from_idx, csv.row_num());
+            meta.vertex_attributes.push_back(std::move(vertex_att));
             break;
         }
 
         case GraphIOFileSection::EDGE_ATTRIBUTES:
         {
             size_t from_idx = 0;
-            core::Attribute edge_att = read_attr_def(fields, from_idx, csv.row_num());
-            meta.edge_attributes.push_back(edge_att);
+            auto edge_att = read_attr_def(fields, from_idx, csv.row_num());
+            meta.edge_attributes.push_back(std::move(edge_att));
             break;
         }
 

@@ -12,12 +12,15 @@
 
 #include "operations/union.hpp"
 #include "operations/project.hpp"
-#include "community/glouvain.hpp"
 #include "community/glouvain2.hpp"
 #include "community/abacus.hpp"
 #include "community/infomap.hpp"
-#include "community/ml-cpm.hpp"
+#include "community/flat.hpp"
+#include "community/mlp.hpp"
+#include "community/mlcpm.hpp"
 #include "community/modularity.hpp"
+#include "community/nmi.hpp"
+#include "community/omega_index.hpp"
 #include "io/read_multilayer_network.hpp"
 #include "io/write_multilayer_network.hpp"
 #include "measures/degree_ml.hpp"
@@ -26,10 +29,11 @@
 #include "measures/redundancy.hpp"
 #include "measures/layer.hpp"
 #include "measures/distance.hpp"
+#include "generation/communities.hpp"
 #include "generation/evolve.hpp"
-#include "generation/PAEvolutionModel.hpp"
-#include "generation/EREvolutionModel.hpp"
-#include "core/datastructures/propertymatrix/summarization.hpp"
+#include "generation/PAModel.hpp"
+#include "generation/ERModel.hpp"
+#include "core/propertymatrix/summarization.hpp"
 #include "layout/multiforce.hpp"
 #include "layout/circular.hpp"
 
@@ -64,7 +68,7 @@ RMLNetwork
 readMultilayer(const std::string& input_file,
                const std::string& name, char sep, bool vertex_aligned)
 {
-    return RMLNetwork(uu::net::read_attributed_homogeneous_multilayer_network(input_file,name,sep,vertex_aligned));
+    return RMLNetwork(uu::net::read_multilayer_network(input_file,name,sep,vertex_aligned));
 }
 
 
@@ -84,7 +88,7 @@ writeMultilayer(
 
     if (format=="multilayer")
     {
-        write_attributed_homogeneous_multilayer_network(mnet,layers.begin(),layers.end(),output_file,sep);
+        write_multilayer_network(mnet,layers.begin(),layers.end(),output_file,sep);
     }
 
     else if (format=="graphml")
@@ -110,7 +114,7 @@ ba_evolution_model(
     size_t m
 )
 {
-    auto pa = std::make_shared<uu::net::PAEvolutionModel<uu::net::MultilayerNetwork>>(m0, m);
+    auto pa = std::make_shared<uu::net::PAModel<uu::net::MultilayerNetwork>>(m0, m);
 
     return REvolutionModel(pa,"Preferential attachment evolution model (" + std::to_string(m0) + "," + std::to_string(m) + ")");
 }
@@ -121,7 +125,7 @@ er_evolution_model(
     size_t n
 )
 {
-    auto er = std::make_shared<uu::net::EREvolutionModel<uu::net::MultilayerNetwork>>(n);
+    auto er = std::make_shared<uu::net::ERModel<uu::net::MultilayerNetwork>>(n);
 
     return REvolutionModel(er, "Uniform evolution model (" + std::to_string(n) + ")");
 }
@@ -194,23 +198,105 @@ growMultiplex(
 
     auto res = std::make_shared<uu::net::MultilayerNetwork>("synth");
 
-    for (size_t a=0; a<num_actors; a++)
-    {
-        res->actors()->add("a"+std::to_string(a));
-    }
-
     std::vector<std::string> layer_names;
 
     for (size_t l=0; l<num_layers; l++)
     {
         std::string layer_name = "l"+std::to_string(l);
-        auto layer = std::make_unique<uu::net::Network>(layer_name, uu::net::EdgeDir::UNDIRECTED, true);
-        res->layers()->add(std::move(layer));
+        //auto layer = std::make_unique<uu::net::Network>(layer_name, uu::net::EdgeDir::UNDIRECTED, true);
+        res->layers()->add(layer_name, uu::net::EdgeDir::UNDIRECTED, uu::net::LoopMode::ALLOWED);
         layer_names.push_back(layer_name);
     }
 
-    uu::net::evolve(res.get(), layer_names, pr_int, pr_ext, dep, models, num_of_steps);
+    uu::net::evolve(res.get(), num_actors, layer_names, pr_int, pr_ext, dep, models, num_of_steps);
+    
     return RMLNetwork(res);
+}
+
+
+List
+generateCommunities(
+     const std::string& type,
+     size_t num_actors,
+     size_t num_layers,
+     size_t num_communities,
+     size_t overlap,
+     const NumericVector& pr_internal,
+     const NumericVector& pr_external
+)
+{
+    // @todo wrap code to process vectors in a utility function
+    std::vector<double> pr_int(num_layers);
+    if (pr_internal.size() == 1)
+    {
+        for (size_t i=0; i<num_layers; i++)
+        {
+            pr_int[i] = pr_internal.at(0);
+        }
+    }
+    else if (pr_internal.size() == num_layers)
+    {
+        for (size_t i=0; i<num_layers; i++)
+        {
+            pr_int[i] = pr_internal.at(i);
+        }
+    }
+    else throw uu::core::WrongParameterException("wrong number of values in pr.internal");
+    
+    std::vector<double> pr_ext(num_layers);
+    if (pr_external.size() == 1)
+    {
+        for (size_t i=0; i<num_layers; i++)
+        {
+            pr_ext[i] = pr_external.at(0);
+        }
+    }
+    else if (pr_external.size() == num_layers)
+    {
+        for (size_t i=0; i<num_layers; i++)
+        {
+            pr_ext[i] = pr_external.at(i);
+        }
+    }
+    else throw uu::core::WrongParameterException("wrong number of values in pr.external");
+    
+    std::string uc_type = type;
+    uu::core::to_upper_case(uc_type);
+    
+    if (uc_type == "PEP")
+    {
+        if (overlap > 0)
+        {
+            Rcout << "Warning: unused parameter: \"overlap\"" << std::endl;
+        }
+        auto pair = uu::net::generate_pep(num_layers, num_actors, num_communities, pr_int, pr_ext);
+        List res = List::create(_["net"]=RMLNetwork(std::move(pair.first)), _["com"]=to_dataframe(pair.second.get()));
+        return res;
+    }
+    else if (uc_type == "PEO")
+    {
+        auto pair = uu::net::generate_peo(num_layers, num_actors, num_communities, overlap, pr_int, pr_ext);
+        List res = List::create(_["net"]=RMLNetwork(std::move(pair.first)), _["com"]=to_dataframe(pair.second.get()));
+        return res;
+    }
+    else if (uc_type == "SEP")
+    {
+        if (overlap > 0)
+        {
+            Rcout << "Warning: unused parameter: \"overlap\"" << std::endl;
+        }
+        auto pair = uu::net::generate_sep(num_layers, num_actors, num_communities, pr_int, pr_ext);
+        List res = List::create(_["net"]=RMLNetwork(std::move(pair.first)), _["com"]=to_dataframe(pair.second.get()));
+        return res;
+    }
+    else if (uc_type == "SEO")
+    {
+        auto pair = uu::net::generate_seo(num_layers, num_actors, num_communities, overlap, pr_int, pr_ext);
+        List res = List::create(_["net"]=RMLNetwork(std::move(pair.first)), _["com"]=to_dataframe(pair.second.get()));
+        return res;
+    }
+    else throw uu::core::WrongParameterException("wrong type parameter");
+    return List();
 }
 
 
@@ -301,7 +387,22 @@ edges_idx(
 )
 {
     auto mnet = rmnet.get_mlnet();
-    NumericVector from, to, directed;
+    
+    size_t num_edges = 0;
+    for (auto l1: *mnet->layers())
+    {
+        num_edges += l1->edges()->size();
+        for (auto l2: *mnet->layers())
+        {
+            if (l2 >= l1) continue;
+            auto edges = mnet->interlayer_edges()->get(l1, l2);
+            if (edges) num_edges += edges->size();
+        }
+    }
+    
+    NumericVector from(num_edges);
+    NumericVector to(num_edges);
+    NumericVector directed(num_edges);
 
     // stores at which index vertices start in a layer
     std::unordered_map<const G*, size_t> offset;
@@ -313,28 +414,39 @@ edges_idx(
     }
     
     // intralayer
-    
+    size_t idx = 0;
     for (auto l: *mnet->layers())
     {
         auto vertices = l->vertices();
 
         for (auto edge: *l->edges())
         {
-            from.push_back(vertices->index_of(edge->v1)+offset[l]+1);
-            to.push_back(vertices->index_of(edge->v2)+offset[l]+1);
-            directed.push_back((edge->dir==uu::net::EdgeDir::DIRECTED)?1:0);
+            from[idx] = vertices->index_of(edge->v1)+offset[l]+1;
+            to[idx] = vertices->index_of(edge->v2)+offset[l]+1;
+            directed[idx] = (edge->dir==uu::net::EdgeDir::DIRECTED)?1:0;
+            idx++;
         }
     }
 
     // interlayer
-    for (auto edge: *mnet->interlayer_edges())
+    for (auto l1: *mnet->layers())
     {
-        from.push_back(edge->l1->vertices()->index_of(edge->v1)+offset[edge->l1]+1);
-        to.push_back(edge->l2->vertices()->index_of(edge->v2)+offset[edge->l2]+1);
-        directed.push_back((edge->dir==uu::net::EdgeDir::DIRECTED)?1:0);
+        //num_edges += l1->edges()->size();
+        for (auto l2: *mnet->layers())
+        {
+            if (l2 <= l1) continue;
+            auto edges = mnet->interlayer_edges()->get(l1, l2);
+            if (!edges) continue;
+            for (auto edge: *edges)
+            {
+                from[idx] = l1->vertices()->index_of(edge->v1)+offset[l1]+1;
+                to[idx] = l2->vertices()->index_of(edge->v2)+offset[l2]+1;
+                directed[idx] = (edge->dir==uu::net::EdgeDir::DIRECTED)?1:0;
+                idx++;
+            }
+        }
     }
-
-
+    
     return DataFrame::create(_["from"] = from, _["to"] = to, _["dir"] = directed );
 }
 
@@ -359,9 +471,16 @@ edges(
         layers2 = resolve_layers(mnet,layer_names2);
     }
 
-    CharacterVector from_a, from_l, to_a, to_l;
-    NumericVector directed;
+    size_t num_edges = numEdges(rmnet, layer_names1, layer_names2);
+    
+    CharacterVector from_a(num_edges);
+    CharacterVector from_l(num_edges);
+    CharacterVector to_a(num_edges);
+    CharacterVector to_l(num_edges);
+    
+    NumericVector directed(num_edges);
 
+    size_t idx = 0;
     for (auto layer1: layers1)
     {
         for (auto layer2: layers2)
@@ -376,23 +495,27 @@ edges(
 
                 for (auto edge: *layer1->edges())
                 {
-                    from_a.push_back(edge->v1->name);
-                    from_l.push_back(layer1->name);
-                    to_a.push_back(edge->v2->name);
-                    to_l.push_back(layer1->name);
-                    directed.push_back((edge->dir==uu::net::EdgeDir::DIRECTED)?1:0);
+                    from_a[idx] = edge->v1->name;
+                    from_l[idx] = layer1->name;
+                    to_a[idx] = edge->v2->name;
+                    to_l[idx] = layer1->name;
+                    directed[idx] = (edge->dir==uu::net::EdgeDir::DIRECTED?1:0);
+                    idx++;
                 }
             }
 
             else
             {
-                for (auto edge: *mnet->interlayer_edges()->get(layer1,layer2))
+                auto edges = mnet->interlayer_edges()->get(layer1,layer2);
+                if (!edges) continue;
+                for (auto edge: *edges)
                 {
-                    from_a.push_back(edge->v1->name);
-                    from_l.push_back(edge->l1->name);
-                    to_a.push_back(edge->v2->name);
-                    to_l.push_back(edge->l2->name);
-                    directed.push_back((edge->dir==uu::net::EdgeDir::DIRECTED)?1:0);
+                    from_a[idx] = edge->v1->name;
+                    from_l[idx] = layer1->name;
+                    to_a[idx] = edge->v2->name;
+                    to_l[idx] = layer2->name;
+                    directed[idx] = (edge->dir==uu::net::EdgeDir::DIRECTED?1:0);
+                    idx++;
                 }
             }
 
@@ -497,6 +620,10 @@ numEdges(
 
             else
             {
+                if (!mnet->interlayer_edges()->get(layer1,layer2))
+                {
+                    continue;
+                }
                 num_edges += mnet->interlayer_edges()->get(layer1,layer2)->size();
             }
 
@@ -526,24 +653,36 @@ isDirected(
         layers2 = resolve_layers(mnet,layer_names2);
     }
 
-    CharacterVector l1, l2;
-    NumericVector directed;
+    size_t num_entries = layers1.size() * layers2.size();
+    
+    CharacterVector l1(num_entries);
+    CharacterVector l2(num_entries);
+    NumericVector directed(num_entries);
 
+    size_t row_num = 0;
     for (auto layer1: layers1)
     {
         for (auto layer2: layers2)
         {
-            l1.push_back(layer1->name);
-            l2.push_back(layer2->name);
+            l1[row_num] = layer1->name;
+            l2[row_num] = layer2->name;
             
             if (layer1==layer2)
             {
-                directed.push_back(layer1->is_directed()?1:0);
+                directed[row_num] = layer1->is_directed()?1:0;
             }
             else
             {
-                directed.push_back((mnet->interlayer_edges()->is_directed(layer1,layer2))?1:0);
+                if (!mnet->interlayer_edges()->get(layer1,layer2))
+                {
+                    Rcout << "Warning: interlayer edges between " <<
+                    layer1->name << " and " << layer2->name <<
+                    " not initialized" << std::endl;
+                    directed[row_num] = 0;
+                }
+                else directed[row_num] = (mnet->interlayer_edges()->is_directed(layer1,layer2))?1:0;
             }
+            row_num++;
         }
     }
 
@@ -626,8 +765,8 @@ addLayers(
         {
             auto layer_name = std::string(layer_names[i]);
             auto dir = directed[0]?uu::net::EdgeDir::DIRECTED:uu::net::EdgeDir::UNDIRECTED;
-            auto layer = std::make_unique<G>(layer_name, dir, true);
-            mnet->layers()->add(std::move(layer));
+            //auto layer = std::make_unique<G>(layer_name, dir, true);
+            mnet->layers()->add(layer_name, dir, uu::net::LoopMode::ALLOWED);
         }
     }
 
@@ -642,8 +781,7 @@ addLayers(
         {
             auto layer_name = std::string(layer_names[i]);
             auto dir = directed[i]?uu::net::EdgeDir::DIRECTED:uu::net::EdgeDir::UNDIRECTED;
-            auto layer = std::make_unique<G>(layer_name, dir, true);
-            mnet->layers()->add(std::move(layer));
+            mnet->layers()->add(layer_name, dir, uu::net::LoopMode::ALLOWED);
         }
     }
 }
@@ -673,38 +811,46 @@ addNodes(
     CharacterVector a = vertices(0);
     CharacterVector l = vertices(1);
 
+    /* From V4: actors are not added separately
     for (size_t i=0; i<a.size(); i++)
     {
         auto actor_name = std::string(a[i]);
         mnet->actors()->add(actor_name);
     }
+    */
     
     for (size_t i=0; i<vertices.nrow(); i++)
     {
-        auto actor = mnet->actors()->get(std::string(a(i)));
-
-        if (!actor)
-        {
-            actor = mnet->actors()->add(std::string(a(i)));
-        }
+        auto actor_name = std::string(a(i));
+        auto layer_name = std::string(l(i));
         
-        auto layer = mnet->layers()->get(std::string(l(i)));
+        auto layer = mnet->layers()->get(layer_name);
 
         if (!layer)
         {
             auto dir = uu::net::EdgeDir::UNDIRECTED;
-            auto layer_ = std::make_unique<G>(std::string(l(i)), dir, true);
-            layer = mnet->layers()->add(std::move(layer_));
+            layer = mnet->layers()->add(layer_name, dir, uu::net::LoopMode::ALLOWED);
         }
+        
+        auto actor = mnet->actors()->get(actor_name);
 
-        layer->vertices()->add(actor);
+        if (!actor)
+        {
+            layer->vertices()->add(actor_name);
+        }
+        else
+        {
+            layer->vertices()->add(actor);
+        }
+        
     }
 }
 
 void
 addEdges(
     RMLNetwork& rmnet,
-    const DataFrame& edges)
+    const DataFrame& edges
+)
 {
     auto mnet = rmnet.get_mlnet();
 
@@ -716,41 +862,35 @@ addEdges(
     
     for (size_t i=0; i<edges.nrow(); i++)
     {
-        auto actor1 = mnet->actors()->get(std::string(a_from(i)));
-
-        if (!actor1)
-        {
-            actor1 = mnet->actors()->add(std::string(a_from(i)));
-        }
-        
-        auto actor2 = mnet->actors()->get(std::string(a_to(i)));
-
-        if (!actor2)
-        {
-            actor2 = mnet->actors()->add(std::string(a_to(i)));
-        }
-        
-        auto layer1 = mnet->layers()->get(std::string(l_from(i)));
-
+        auto layer_name1 = std::string(l_from(i));
+        auto layer1 = mnet->layers()->get(layer_name1);
         if (!layer1)
         {
             auto dir = uu::net::EdgeDir::UNDIRECTED;
-            auto layer_ = std::make_unique<G>(std::string(l_from(i)), dir, true);
-            layer1 = mnet->layers()->add(std::move(layer_));
+            layer1 = mnet->layers()->add(layer_name1, dir, uu::net::LoopMode::ALLOWED);
         }
         
-        layer1->vertices()->add(actor1);
+        auto actor_name1 = std::string(a_from(i));
+        auto actor1 = layer1->vertices()->get(actor_name1);
+        if (!actor1)
+        {
+            actor1 = mnet->actors()->add(actor_name1);
+        }
 
-        auto layer2 = mnet->layers()->get(std::string(l_to(i)));
-
+        auto layer_name2 = std::string(l_to(i));
+        auto layer2 = mnet->layers()->get(layer_name2);
         if (!layer2)
         {
             auto dir = uu::net::EdgeDir::UNDIRECTED;
-            auto layer_ = std::make_unique<G>(std::string(l_to(i)), dir, true);
-            layer2 = mnet->layers()->add(std::move(layer_));
+            layer2 = mnet->layers()->add(layer_name2, dir, uu::net::LoopMode::ALLOWED);
         }
 
-        layer2->vertices()->add(actor2);
+        auto actor_name2 = std::string(a_to(i));
+        auto actor2 = layer2->vertices()->get(actor_name2);
+        if (!actor2)
+        {
+            actor2 = mnet->actors()->add(actor_name2);
+        }
         
 
         if (layer1==layer2)
@@ -760,6 +900,11 @@ addEdges(
 
         else
         {
+            if (!mnet->interlayer_edges()->get(layer1,layer2))
+            {
+                uu::net::EdgeDir dir = uu::net::EdgeDir::UNDIRECTED;
+                mnet->interlayer_edges()->init(layer1,layer2, dir);
+            }
             mnet->interlayer_edges()->add(actor1, layer1, actor2, layer2);
         }
     }
@@ -804,7 +949,17 @@ setDirected(
         }
         else
         {
-            mnet->interlayer_edges()->set_directed(layer1, layer2, directed);
+            if (!mnet->interlayer_edges()->get(layer1,layer2))
+            {
+                uu::net::EdgeDir dir = directed?uu::net::EdgeDir::DIRECTED:uu::net::EdgeDir::UNDIRECTED;
+                mnet->interlayer_edges()->init(layer1,layer2, dir);
+            }
+            else
+            {
+                Rcout << "Warning: cannot initialize existing pair of layers " <<
+                layer1->name << " and " << layer2->name << std::endl;
+                continue;
+            }
         }
     }
 }
@@ -826,13 +981,14 @@ deleteLayers(
 void
 deleteActors(
     RMLNetwork& rmnet,
-    const CharacterVector& actor_names)
+    const CharacterVector& actor_names
+)
 {
     auto mnet = rmnet.get_mlnet();
-
-    for (size_t i=0; i<actor_names.size(); i++)
+    auto actors = resolve_actors(mnet, actor_names);
+    
+    for (auto actor: actors)
     {
-        auto actor = mnet->actors()->get(std::string(actor_names(i)));
         mnet->actors()->erase(actor);
     }
 }
@@ -876,8 +1032,8 @@ deleteEdges(
         }
         else
         {
-            auto e = mnet->interlayer_edges()->get(actor1, layer1, actor2, layer2);
-            mnet->interlayer_edges()->erase(e);
+            //auto e = mnet->interlayer_edges()->get(actor1, layer1, actor2, layer2);
+            mnet->interlayer_edges()->erase(actor1, layer1, actor2, layer2);
         }
     }
 }
@@ -1165,11 +1321,12 @@ getValues(
 
         if (att->type==uu::core::AttributeType::DOUBLE)
         {
-            NumericVector value;
+            NumericVector value(actors.size());
 
+            size_t row_num = 0;
             for (auto actor: actors)
             {
-                value.push_back(attributes->get_double(actor,att->name).value);
+                value[row_num++] = attributes->get_double(actor, att->name).value;
             }
 
             return DataFrame::create(_["value"] = value);
@@ -1177,11 +1334,12 @@ getValues(
 
         else if (att->type==uu::core::AttributeType::STRING)
         {
-            CharacterVector value;
-
+            CharacterVector value(actors.size());
+            
+            size_t row_num = 0;
             for (auto actor: actors)
             {
-                value.push_back(attributes->get_string(actor,att->name).value);
+                value[row_num++] = attributes->get_string(actor,att->name).value;
             }
 
             return DataFrame::create(_["value"] = value);
@@ -1232,32 +1390,34 @@ getValues(
         
         if (attribute_type==uu::core::AttributeType::DOUBLE)
         {
-            NumericVector value;
+            NumericVector value(vertices.size());
             
+            size_t row_num = 0;
             for (auto vertex: vertices)
             {
                 
                 auto layer = vertex.second;
                 auto attributes = layer->vertices()->attr();
 
-            value.push_back(attributes->get_double(vertex.first,attribute_name).value);
+                value[row_num++] = attributes->get_double(vertex.first,attribute_name).value;
             
-        }
+            }
             
             return DataFrame::create(_["value"] = value);
         }
 
         else if (attribute_type == uu::core::AttributeType::STRING)
         {
-            CharacterVector value;
+            CharacterVector value(vertices.size());
             
+            size_t row_num = 0;
             for (auto vertex: vertices)
             {
                 
                 auto layer = vertex.second;
                 auto attributes = layer->vertices()->attr();
                 
-                value.push_back(attributes->get_string(vertex.first,attribute_name).value);
+                value[row_num++] = attributes->get_string(vertex.first,attribute_name).value;
                 
             }
             
@@ -1321,8 +1481,8 @@ getValues(
         
         if (attribute_type == uu::core::AttributeType::DOUBLE)
         {
-            NumericVector value;
-
+            std::vector<double> value;
+            
             for (auto edge: edges)
             {
                 auto actor1 = std::get<0>(edge);
@@ -1342,12 +1502,15 @@ getValues(
                     value.push_back(attributes->get_double(e, attribute_name).value);
                 }
             }
-            return DataFrame::create(_["value"] = value);
+            NumericVector res(value.size());
+            size_t row_num = 0;
+            for (auto v: value) res[row_num++] = v;
+            return DataFrame::create(_["value"] = res);
         }
 
         else if (attribute_type == uu::core::AttributeType::STRING)
         {
-            CharacterVector value;
+            std::vector<std::string> value;
 
             for (auto edge: edges)
             {
@@ -1368,7 +1531,10 @@ getValues(
                     value.push_back(attributes->get_string(e, attribute_name).value);
                 }
             }
-            return DataFrame::create(_["value"] = value);
+            CharacterVector res(value.size());
+            size_t row_num = 0;
+            for (auto v: value) res[row_num++] = v;
+            return DataFrame::create(_["value"] = res);
         }
 
         else
@@ -1460,6 +1626,10 @@ setValues(
             case uu::core::AttributeType::TEXT:
             case uu::core::AttributeType::TIME:
             case uu::core::AttributeType::INTEGER:
+            case uu::core::AttributeType::INTEGERSET:
+            case uu::core::AttributeType::DOUBLESET:
+            case uu::core::AttributeType::STRINGSET:
+            case uu::core::AttributeType::TIMESET:
                 stop("attribute type not supported: " + uu::core::to_string(att->type));
 
             }
@@ -1531,6 +1701,10 @@ setValues(
             case uu::core::AttributeType::TEXT:
             case uu::core::AttributeType::TIME:
             case uu::core::AttributeType::INTEGER:
+            case uu::core::AttributeType::INTEGERSET:
+            case uu::core::AttributeType::DOUBLESET:
+            case uu::core::AttributeType::STRINGSET:
+            case uu::core::AttributeType::TIMESET:
                 stop("attribute type not supported: " + uu::core::to_string(att->type));
 
             }
@@ -1606,6 +1780,10 @@ setValues(
             case uu::core::AttributeType::TEXT:
             case uu::core::AttributeType::TIME:
             case uu::core::AttributeType::INTEGER:
+            case uu::core::AttributeType::INTEGERSET:
+            case uu::core::AttributeType::DOUBLESET:
+            case uu::core::AttributeType::STRINGSET:
+            case uu::core::AttributeType::TIMESET:
                 stop("attribute type not supported: " + uu::core::to_string(att->type));
 
             }
@@ -1660,6 +1838,10 @@ setValues(
                     case uu::core::AttributeType::TEXT:
                     case uu::core::AttributeType::TIME:
                     case uu::core::AttributeType::INTEGER:
+                    case uu::core::AttributeType::INTEGERSET:
+                    case uu::core::AttributeType::DOUBLESET:
+                    case uu::core::AttributeType::STRINGSET:
+                    case uu::core::AttributeType::TIMESET:
                     stop("attribute type not supported: " + uu::core::to_string(att->type));
                     
                 }
@@ -1712,11 +1894,8 @@ flatten(
 
     auto edge_directionality = directed?uu::net::EdgeDir::DIRECTED:uu::net::EdgeDir::UNDIRECTED;
 
-
-    auto new_layer = std::make_unique<G>(new_layer_name, edge_directionality, true);
-    new_layer->edges()->attr()->add("weight", uu::core::AttributeType::DOUBLE);
-
-    auto target = mnet->layers()->add(std::move(new_layer));
+    auto target = mnet->layers()->add(new_layer_name, edge_directionality, uu::net::LoopMode::ALLOWED);
+    target->edges()->attr()->add("weight", uu::core::AttributeType::DOUBLE);
 
     if (method=="weighted")
     {
@@ -1753,9 +1932,9 @@ void project(
         stop("Layer not found");
     if (method=="clique")
     {
-        auto target = std::make_unique<G>(new_layer, uu::net::EdgeDir::UNDIRECTED, true);
-        auto target_ptr = mnet->layers()->add(std::move(target));
+        auto target_ptr = mnet->layers()->add(new_layer, uu::net::EdgeDir::UNDIRECTED, uu::net::LoopMode::ALLOWED);
         uu::net::project_unweighted(mnet, layer1, layer2, target_ptr);
+
     }
     else stop("Unexpected value: algorithm");
 }
@@ -2196,10 +2375,10 @@ comparison_ml(
     auto mnet = rmnet.get_mlnet();
     std::vector<uu::net::Network*> layers = resolve_layers(mnet,layer_names);
     std::vector<NumericVector> values;
-
+    
     for (size_t i=0; i<layers.size(); i++)
     {
-        NumericVector v;
+        NumericVector v(layers.size());
         values.push_back(v);
     }
 
@@ -2213,7 +2392,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::jaccard<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::jaccard<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2226,7 +2405,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::coverage<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::coverage<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2239,7 +2418,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::kulczynski2<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::kulczynski2<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2252,7 +2431,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::simple_matching<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::simple_matching<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2265,7 +2444,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::russell_rao<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::russell_rao<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2278,7 +2457,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::hamann<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::hamann<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2291,7 +2470,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::jaccard<std::pair<const typename M::vertex_type*,const typename M::vertex_type*>, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::jaccard<std::pair<const typename M::vertex_type*,const typename M::vertex_type*>, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2304,7 +2483,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::coverage<std::pair<const typename M::vertex_type*,const typename M::vertex_type*>, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::coverage<std::pair<const typename M::vertex_type*,const typename M::vertex_type*>, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2317,7 +2496,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::kulczynski2<std::pair<const typename M::vertex_type*,const typename M::vertex_type*>, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::kulczynski2<std::pair<const typename M::vertex_type*,const typename M::vertex_type*>, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2330,7 +2509,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::simple_matching<std::pair<const typename M::vertex_type*,const typename M::vertex_type*>, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::simple_matching<std::pair<const typename M::vertex_type*,const typename M::vertex_type*>, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2343,7 +2522,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::russell_rao<std::pair<const typename M::vertex_type*,const typename M::vertex_type*>, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::russell_rao<std::pair<const typename M::vertex_type*,const typename M::vertex_type*>, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2356,7 +2535,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::hamann<std::pair<const typename M::vertex_type*,const typename M::vertex_type*>, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::hamann<std::pair<const typename M::vertex_type*,const typename M::vertex_type*>, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2369,7 +2548,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::jaccard<uu::net::Triad, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::jaccard<uu::net::Triad, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2382,7 +2561,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::coverage<uu::net::Triad, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::coverage<uu::net::Triad, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2395,7 +2574,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::kulczynski2<uu::net::Triad, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::kulczynski2<uu::net::Triad, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2408,7 +2587,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::simple_matching<uu::net::Triad, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::simple_matching<uu::net::Triad, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2421,7 +2600,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::russell_rao<uu::net::Triad, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::russell_rao<uu::net::Triad, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2434,7 +2613,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::hamann<uu::net::Triad, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::hamann<uu::net::Triad, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2453,7 +2632,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::dissimilarity_index<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j],K));
+                values[j][i] = uu::core::dissimilarity_index<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j],K);
             }
         }
     }
@@ -2472,7 +2651,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::KL_divergence<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j],K));
+                values[j][i] = uu::core::KL_divergence<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j],K);
             }
         }
     }
@@ -2491,7 +2670,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::jeffrey_divergence<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j],K));
+                values[j][i] = uu::core::jeffrey_divergence<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j],K);
             }
         }
     }
@@ -2505,7 +2684,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::pearson<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::pearson<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2520,7 +2699,7 @@ comparison_ml(
         {
             for (size_t i=0; i<layers.size(); i++)
             {
-                values[j].push_back(uu::core::pearson<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]));
+                values[j][i] = uu::core::pearson<const uu::net::Vertex*, const uu::net::Network*>(P,layers[i],layers[j]);
             }
         }
     }
@@ -2649,6 +2828,7 @@ distance_ml(
     const CharacterVector& to_actors,
     const std::string& method)
 {
+    // @todo DataFramce can be allocated from the beginning to increase efficiency
     auto mnet = rmnet.get_mlnet();
     std::vector<const uu::net::Vertex*> actors_to = resolve_actors(mnet,to_actors);
     auto actor_from = mnet->actors()->get(from_actor);
@@ -2747,29 +2927,16 @@ DataFrame
 glouvain_ml(
     const RMLNetwork& rmnet,
     double gamma,
-    double omega,
-    int limit
-)
-{
-    auto mnet = rmnet.get_mlnet();
-
-    auto com_struct = uu::net::generalized_louvain<M,G>(mnet, gamma, omega, limit);
-
-    return to_dataframe(com_struct.get());
-}
-
-DataFrame
-glouvain2_ml(
-    const RMLNetwork& rmnet,
     double omega
 )
 {
     auto mnet = rmnet.get_mlnet();
-    
+
     auto com_struct = uu::net::glouvain2<M>(mnet, omega);
-    
+
     return to_dataframe(com_struct.get());
 }
+
 
 DataFrame
 infomap_ml(const RMLNetwork& rmnet,
@@ -2792,7 +2959,7 @@ infomap_ml(const RMLNetwork& rmnet,
         Rcout << "Returning empty community set." << std::endl;
     }
 
-    auto com_struct = std::make_unique<uu::net::CommunityStructure<uu::net::VertexLayerCommunity<const G>>>();
+    auto com_struct = std::make_unique<uu::net::CommunityStructure<uu::net::MultilayerNetwork>>();
     return to_dataframe(com_struct.get());
 }
 
@@ -2807,8 +2974,7 @@ abacus_ml(
 
     try
     {
-        auto pillar_com_struct = uu::net::abacus<M,G>(mnet, min_actors, min_layers);
-        auto com_struct = to_vertex_layer_community_structure(pillar_com_struct.get());
+        auto com_struct = uu::net::abacus(mnet, min_actors, min_layers);
         return to_dataframe(com_struct.get());
     }
 
@@ -2818,11 +2984,44 @@ abacus_ml(
         Rcout << "Returning empty community set." << std::endl;
     }
 
-    auto pillar_com_struct = std::make_unique<uu::net::CommunityStructure<uu::net::PillarCommunity<const G>>>();
-    auto com_struct = to_vertex_layer_community_structure(pillar_com_struct.get());
+    auto com_struct = std::make_unique<uu::net::CommunityStructure<uu::net::MultilayerNetwork>>();
     return to_dataframe(com_struct.get());
 
 }
+
+DataFrame
+flat_ec(
+    const RMLNetwork& rmnet
+)
+{
+    auto mnet = rmnet.get_mlnet();
+
+    auto com_struct = uu::net::flat_ec(mnet);
+    return to_dataframe(com_struct.get());
+}
+
+DataFrame
+flat_nw(
+    const RMLNetwork& rmnet
+)
+{
+    auto mnet = rmnet.get_mlnet();
+
+    auto com_struct = uu::net::flat_nw(mnet);
+    return to_dataframe(com_struct.get());
+}
+
+DataFrame
+mdlp(
+     const RMLNetwork& rmnet
+)
+{
+    auto mnet = rmnet.get_mlnet();
+
+    auto com_struct = uu::net::mlp(mnet);
+    return to_dataframe(com_struct.get());
+}
+
 /*
 DataFrame lart_ml(
    const RMLNetwork& rmnet, int t, double eps, double gamma) {
@@ -2848,6 +3047,35 @@ modularity_ml(
     auto mnet = rmnet.get_mlnet();
     auto communities = to_communities(com, mnet);
     return uu::net::modularity(mnet, communities.get(), omega);
+}
+
+
+double
+nmi(
+    const RMLNetwork& rmnet,
+    const DataFrame& com1,
+    const DataFrame& com2
+)
+{
+    size_t num_vertices = numNodes(rmnet, CharacterVector());
+    auto mnet = rmnet.get_mlnet();
+    auto c1 = to_communities(com1, mnet);
+    auto c2 = to_communities(com2, mnet);
+    return uu::net::nmi(c1.get(), c2.get(), num_vertices);
+}
+
+double
+omega(
+    const RMLNetwork& rmnet,
+    const DataFrame& com1,
+    const DataFrame& com2
+)
+{
+    size_t num_vertices = numNodes(rmnet, CharacterVector());
+    auto mnet = rmnet.get_mlnet();
+    auto c1 = to_communities(com1, mnet);
+    auto c2 = to_communities(com2, mnet);
+    return uu::net::omega_index(c1.get(), c2.get(), num_vertices);
 }
 
 

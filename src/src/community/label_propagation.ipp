@@ -1,17 +1,20 @@
+#include "community/_impl/common.hpp"
+#include "core/utils/Counter.hpp"
+#include "core/utils/random.hpp"
+
 namespace uu {
 namespace net {
 
 template <typename G>
-std::unique_ptr<CommunityStructure<Community<const Vertex*>>>
-label_propagation(
-    const G* net
-)
+std::unique_ptr<CommunityStructure<G>>
+                                    label_propagation(
+                                        const G* net
+                                    )
 {
-
-    //NodeListSharedPtr nodes = mnet->get_nodes(layer); === net->vertices()
 
     std::unordered_map<const Vertex*, size_t> membership; // community membership
     std::vector<const Vertex*> order; // order vector to decide in which order to process the nodes
+    
     // Initialize labels
     int l=0;
 
@@ -27,9 +30,9 @@ label_propagation(
 
         // Compute order of node processing
         unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-
-        //std::shuffle(order.begin(), order.end(), std::default_random_engine(seed));
+ 
         // NOT AVAILABLE IN ALL COMPILERS
+        //std::shuffle(order.begin(), order.end(), std::default_random_engine(seed));
         core::shuffle(order.begin(), order.end(), std::default_random_engine(seed));
 
 
@@ -40,7 +43,7 @@ label_propagation(
 
             for (auto neigh: *net->edges()->neighbors(node,EdgeMode::INOUT))
             {
-                // TODO make it also for directed graphs?
+                // @todo make it also for directed graphs?
                 num_neighbors.inc(membership.at(neigh));
             }
 

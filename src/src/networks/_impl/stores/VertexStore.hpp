@@ -1,18 +1,14 @@
-/**
- * History:
- * - 2018.03.09 file created, following a restructuring of the previous library.
- */
-
 #ifndef UU_NET_STORES_VERTEXSTORE_H_
 #define UU_NET_STORES_VERTEXSTORE_H_
 
 #include <memory>
-#include "core/datastructures/observers/Observer.hpp"
+#include "core/observers/Observer.hpp"
 #include "objects/Vertex.hpp"
 #include "core/stores/ObjectStore.hpp"
 
 namespace uu {
 namespace net {
+
 
 /**
  * A VertexStore allows to create, store, retrieve and erase a set of vertices.
@@ -28,22 +24,27 @@ class
 
   public:
 
-    typedef Vertex value_type;
+    typedef const Vertex value_type;
+    typedef const Vertex* get_return_type;
     typedef std::string key_type;
+    typedef core::ObjectStore<Vertex>::iterator iterator;
 
     VertexStore(
     );
 
 
+    virtual
+    ~VertexStore() {}
+
     /** Returns an iterator to the first object in the collection */
-    core::PtrSortedRandomSet<const Vertex,std::shared_ptr<const Vertex>,core::SharedPtrLT<const Vertex>,core::SharedPtrEQ<const Vertex>>::iterator
-            begin(
-            ) const;
+    iterator
+    begin(
+    ) const;
 
     /** Returns an iterator after the last object in the collection */
-    core::PtrSortedRandomSet<const Vertex,std::shared_ptr<const Vertex>,core::SharedPtrLT<const Vertex>,core::SharedPtrEQ<const Vertex>>::iterator
-            end(
-            ) const;
+    iterator
+    end(
+    ) const;
 
     /** Returns the number of objects in the collection */
     size_t
@@ -83,6 +84,12 @@ class
         const Vertex* v
     ) const;
 
+    /** Returns true if an object with the input id is present in the collection */
+    bool
+    contains(
+        const std::string& key
+    ) const;
+
     const Vertex*
     get(
         const std::string& key
@@ -112,6 +119,11 @@ class
     bool
     erase(
         const Vertex * v
+    );
+
+    bool
+    erase(
+        const std::string& key
     );
 
     void

@@ -2,6 +2,7 @@
 #define UU_CREATION_STANDARDGRAPHS_H_
 
 #include "networks/Network.hpp"
+#include "networks/MultilayerNetwork.hpp"
 
 #include <memory>
 
@@ -16,9 +17,29 @@ std::unique_ptr<Network>
 null_graph(
     size_t n,
     EdgeDir dir = EdgeDir::UNDIRECTED,
-    bool allows_loops = false
+    LoopMode allows_loops = LoopMode::DISALLOWED
 );
 
+
+/**
+ * Returns a multilayer network with vertices and layers but no edges.
+ */
+std::unique_ptr<MultilayerNetwork>
+null_multiplex(
+    size_t n,
+    const std::vector<EdgeDir>& dir,
+    const std::vector<LoopMode>& allows_loops
+);
+
+/**
+ * Returns a multilayer network with n vertices and l layers but no edges.
+ * By default, layers are undirected and allow loops.
+ */
+std::unique_ptr<MultilayerNetwork>
+null_multiplex(
+    size_t n,
+    size_t l
+);
 
 /**
  * Returns a network K_n with n vertices, all adjacent to each other.

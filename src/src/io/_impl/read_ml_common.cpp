@@ -26,8 +26,8 @@ new_multilayer_section_start(const std::string& line)
         line_copy=="#ACTOR ATTRIBUTES" ||
         line_copy=="#VERTICES" ||
         line_copy=="#VERTEX ATTRIBUTES" ||
-        // OLD line_copy=="#INTRALAYER EDGES" ||
-        // OLD line_copy=="#INTERLAYER EDGES" ||
+        line_copy=="#INTRALAYER EDGES" || // for backward compatibility
+        line_copy=="#INTERLAYER EDGES" || // for backward compatibility
         line_copy=="#EDGES" ||
         line_copy=="#EDGE ATTRIBUTES" ||
         // deprecated
@@ -87,6 +87,16 @@ get_multilayer_section(
         return MultilayerIOFileSection::EDGES;
     }
 
+    if (line_copy=="#INTERLAYER EDGES")
+    {
+        return MultilayerIOFileSection::INTERLAYER_EDGES;
+    }
+
+    if (line_copy=="#INTRALAYER EDGES")
+    {
+        return MultilayerIOFileSection::INTRALAYER_EDGES;
+    }
+
     if (line_copy=="#EDGE ATTRIBUTES")
     {
         return MultilayerIOFileSection::EDGE_ATTRIBUTES;
@@ -137,7 +147,6 @@ read_multilayer_metadata(
         {
             continue;
         }
-
 
         if (new_multilayer_section_start(line))
         {
@@ -271,8 +280,8 @@ read_multilayer_metadata(
             if (fields.size()==2)
             {
                 size_t from_idx = 0;
-                core::Attribute vertex_att = read_attr_def(fields, from_idx, csv.row_num());
-                meta.vertex_attributes.push_back(vertex_att);
+                auto vertex_att = read_attr_def(fields, from_idx, csv.row_num());
+                meta.vertex_attributes.push_back(std::move(vertex_att));
             }
 
             else
@@ -301,8 +310,8 @@ read_multilayer_metadata(
 
                 // read attribute
                 size_t from_idx = 1;
-                core::Attribute vertex_att = read_attr_def(fields, from_idx, csv.row_num());
-                meta.intralayer_vertex_attributes[layer_name].push_back(vertex_att);
+                auto vertex_att = read_attr_def(fields, from_idx, csv.row_num());
+                meta.intralayer_vertex_attributes[layer_name].push_back(std::move(vertex_att));
             }
 
             else
@@ -319,8 +328,8 @@ read_multilayer_metadata(
             if (fields.size()==2)
             {
                 int from_idx = 0;
-                core::Attribute edge_att = read_attr_def(fields, from_idx, csv.row_num());
-                meta.interlayer_edge_attributes.push_back(edge_att);
+                auto edge_att = read_attr_def(fields, from_idx, csv.row_num());
+                meta.interlayer_edge_attributes.push_back(std::move(edge_att));
             }
 
             else if (fields.size()==3)
@@ -336,8 +345,8 @@ read_multilayer_metadata(
 
                 // read attribute
                 int from_idx = 1;
-                core::Attribute edge_att = read_attr_def(fields, from_idx, csv.row_num());
-                meta.intralayer_edge_attributes[layer_name].push_back(edge_att);
+                auto edge_att = read_attr_def(fields, from_idx, csv.row_num());
+                meta.intralayer_edge_attributes[layer_name].push_back(std::move(edge_att));
             }
 
             else
