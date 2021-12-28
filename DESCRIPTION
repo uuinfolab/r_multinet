@@ -1,13 +1,13 @@
 Package: multinet
 Type: Package
 Title: Analysis and Mining of Multilayer Social Networks
-Version: 4.0
-Date: 2021-06-01
+Version: 4.0.1
+Date: 2021-12-28
 Author: Matteo Magnani, Luca Rossi (API design), Obaida Hanteer (mdlpa, flat_ec, flat_nw, some community eval. functions), Davide Vega (API and code design). The package uses functions from eclat <https://borgelt.net/eclat.html>, for association rule mining, Infomap <https://www.mapequation.org>, for the Infomap community detection method, and Howard Hinnant's date and time library <https://github.com/HowardHinnant/date>. The code from these libraries has been included in our source package.
 Maintainer: Matteo Magnani <matteo.magnani@it.uu.se>
 Description: Functions for the creation/generation and analysis of multilayer social networks <doi:10.18637/jss.v098.i08>.
 License: GPL
-Depends: igraph (>= 1.2), Rcpp (>= 1.0.1), methods, RColorBrewer
+Depends: igraph (>= 1.2), Rcpp (>= 1.0), methods, RColorBrewer
 LinkingTo: Rcpp
 RcppModules: multinet
 SystemRequirements: A C++14 compiler
