@@ -4,7 +4,7 @@ This repository contains the R version of the _multinet_ library for the analysi
 
 The library is available on CRAN (the Comprehensive R Archive Network), and can be installed directly from an R terminal or RStudio. This repository is mainly useful if you want to develop the library.
 
-This library was originally based on the book: Multilayer Social Networks, by Dickison, Magnani & Rossi, Cambridge University Press (2016). The methods contained in the library and described in the book have been developed by many different authors: extensive references are available in the book, and in the documentation of each function we indicate the main reference we have followed for the implementation. For some methods developed after the book was published we give references to the corresponding literature. Additional information, including material such as survey articles and datasets, is available at http://multilayer.it.uu.se/.
+This library was originally based on the book: Multilayer Social Networks, by Dickison, Magnani & Rossi, Cambridge University Press (2016). The methods contained in the library and described in the book have been developed by many different authors: extensive references are available in the book, and in the documentation of each function we indicate the main reference we have followed for the implementation. For some methods developed after the book was published we give references to the corresponding literature. Additional information, including material such as survey articles and datasets, is available at [our lab's Web site](https://uuinfolab.github.io).
 
 ## Requirements
 
@@ -22,7 +22,7 @@ install.packages("multinet")
 
 ## Contribute
 
-To modify the library, one should consider that a large part of its code is written in C++ and comes from a different repository: https://bitbucket.org/uuinfolab/uunet/.
+To modify the library, one should consider that a large part of its code is written in C++ and comes from the [uunet repository](https://github.com/uuinfolab/uunet).
 
 If you only want to modify the functions written in R, this can be done directly in this repository. These functions are in the R/ directory:
 
@@ -45,7 +45,7 @@ The directory src/ contains the files exporting C++ functions from uunet to R, u
 - r_functions.cpp contains the functions referenced in rcpp_module_definition.cpp, themselves calling functions from uunet.
 - rcpp_utils.cpp contains some utility functions automating some common tasks used in r_functions.cpp.
 
-If you need to modify any of the files in the directories eclat/, infomap/ and src/, they are imported from uunet and should modified in that repository. One can get the latest code from uunet by running:
+If you need to modify any of the files in the directories eclat/, infomap/ and src/, they are imported from uunet and should modified the [uunet repository](https://github.com/uuinfolab/uunet). One can then get the latest code from uunet by running:
 
 ```sh
 git submodule update --remote --merge
