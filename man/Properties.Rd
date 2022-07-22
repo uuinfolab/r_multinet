@@ -22,9 +22,9 @@ The functions \code{nodes_ml} and \code{num_nodes_ml} are deprecated in the curr
 }
 \usage{
 layers_ml(n)
-actors_ml(n, layers = character(0), add.attributes = FALSE)
-vertices_ml(n, layers = character(0), add.attributes = FALSE)
-edges_ml(n, layers1 = character(0), layers2 = character(0), add.attributes = FALSE)
+actors_ml(n, layers = character(0), attributes = FALSE)
+vertices_ml(n, layers = character(0), attributes = FALSE)
+edges_ml(n, layers1 = character(0), layers2 = character(0), attributes = FALSE)
 edges_idx_ml(n)
 
 num_layers_ml(n)
@@ -52,9 +52,9 @@ The functions num_* compute the number of objects of the requested type.}
 }
 \examples{
 net <- ml_aucs()
-actors_ml(net)
+actors_ml(net, attributes = T)
 layers_ml(net)
-vertices_ml(net)
+vertices_ml(net, attributes = T)
 # only vertices in the "facebook" layer
 vertices_ml(net,"facebook")
 # all edges
