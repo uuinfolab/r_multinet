@@ -8,8 +8,8 @@ as.igraph.Rcpp_RMLNetwork <- function (x, layers=NULL, merge.actors=TRUE, all.ac
     dir = max(is_directed_ml(x)$dir)
     
     if (merge.actors) {
-        a_df <- actors_ml(x, layers, add.attributes=T)
-        e <- as.data.frame(edges_ml(x, layers, add.attributes=T))
+        a_df <- actors_ml(x, layers, attributes=T)
+        e <- as.data.frame(edges_ml(x, layers, attributes=T))
         #e <- e[e$from_layer %in% layers & e$to_layer %in% layers,]
         e_df <- NULL
         if (length(e)>5) {
@@ -34,12 +34,12 @@ as.igraph.Rcpp_RMLNetwork <- function (x, layers=NULL, merge.actors=TRUE, all.ac
         g <- graph_from_data_frame(vertices=a_df, e_df, directed=dir)
     }
     else {
-        a_df <- vertices_ml(x, layers, add.attributes=T)
+        a_df <- vertices_ml(x, layers, attributes=T)
         v_df <- NULL
         if (length(a_df)>2) {
             v_df <- data.frame(node=paste(a_df$layer, "::", a_df$actor, sep = ""), layer=a_df$layer, a_df[3:length(a_df)])
         }
-        e <- as.data.frame(edges_ml(x, layers, add.attributes=T))
+        e <- as.data.frame(edges_ml(x, layers, attributes=T))
         #e <- e[e$from_layer %in% layers & e$to_layer %in% layers,]
         e_df <- NULL
         if (length(e)>5) {
