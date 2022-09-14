@@ -1,0 +1,581 @@
+---
+title: "Analysis of Multiplex Social Networks with R"
+author:
+- Matteo Magnani, InfoLab, Uppsala University
+- Luca Rossi, Data Science & Society Lab, IT University of Copenhagen
+output:
+  #word_document: default
+  pdf_document: default
+---
+```{r, include=FALSE}
+
+library(multinet)
+# library(igraph) already loaded by multinet
+# library(RColorBrewer)
+library(knitr)
+library(pander)
+library(gplots)
+library(ggplot2)
+library(tibble)
+library(rmarkdown)
+library(rprojroot)
+library(formatR)
+library(corrplot)
+```
+
+
+In this workshop we introduce **multinet**: an R package to analyze multiplex social networks represented within the more general framework of multilayer networks.
+
+Multiplex networks are characterized by a common set of _actors_ connected through multiple types of relations. Each type of relation defines a network between these actors, and each of these networks is represented as a _layer_ in the library. For each of these layers we use the standard terminology from graph theory: _vertices_ represent actors who are present in the layer and _edges_ connect adjacent vertices. Notice that not all actors are forced to be present in all layers; for example, only some actors having a Facebook account will be present as vertices in a layer representing Facebook friendship relations.
+
+In addition to multinet, this document also uses the R libraries **knitr**, **gplots**, **ggplot2**, **corrplot**, **pander**, **tibble**, **formatR** and **rmarkdown**. Please install them if you want to run the code contained in this document. The libraries **igraph** and **RColorBrewer** are automatically installed (if needed) and loaded by **multinet**. Using RStudio you can directly modify the source code of the document, execute it and also compile your updated document into a pdf file or other formats.
+
+# Part 0: getting network data
+
+First we should load the library:
+```
+library(multinet)
+```
+
+Networks can be created in the following ways:
+
+1. we can use ``read_ml`` to read a network from file, 
+2. we can create an empty network using ``ml_empty`` and add objects and attributes to it using ``add_XXX_ml`` and ``add_attributes_ml`` (where XXX should be one of ``layers``, ``vertices`` or ``edges`` -- from version 3.1 actors are automatically added when you add a vertex),
+3. we can create an empty network using ``ml_empty`` and add layers to it in the form of igraph objects using ``add_igraph_layer_ml``,
+4. we can generate a synthetic network using a growing network model with ``grow_ml``,
+5. or we can load one of the networks already available in the multinet package.
+
+As reading networks form file is the most typical way to load data, in this section we provide some additional details on the input file format. At the end of this document we also demonstrate how to create synthetic networks. Otherwise, from the next section we will use one of the datasets already available in the library to show how to analyze a real multiplex network.
+For the other ways to create networks please consult the documentation either in RStudio or by writing ``?`` followed by the name of the function on the command line. Writing ?multinet-package shows a general description of the functionality offered by the library, with links to pages about sub-topics.
+
+When no special information is needed, that is, when the network has no attributes, it has no isolated nodes and all edges are undirected, the input file is as simple as a list of layer-annotated edges:
+
+```
+Luca,Matteo,research
+Davide,Matteo,research
+Luca,Matteo,friendship
+```
+
+If needed the library allows us to specify additional details. In particular: we can specify the directionality of intra-layer edges in the #LAYERS section; we can define attributes for actors, vertices and edges; we can specify attribute values in the #ACTORS, #VERTICES and #EDGES sections; and we can indicate the presence of isolated vertices in the #VERTICES section, as in the following example:
+```
+#TYPE multiplex
+
+#LAYERS
+research, UNDIRECTED
+twitter, DIRECTED
+
+#ACTOR ATTRIBUTES
+affiliation,STRING
+
+#VERTEX ATTRIBUTES
+twitter, num_tweets, NUMERIC
+
+#EDGE ATTRIBUTES 
+research, num_publications, NUMERIC
+
+#ACTORS 
+Luca,ITU
+Matteo,UU
+Davide,UU
+
+#VERTICES 
+Luca,twitter,53
+Matteo,twitter,13
+
+#EDGES 
+Luca,Matteo,research,9
+Luca,Matteo,twitter
+```
+
+When we read a multiplex network from file we can also specify that we want all the actors to be present in all the layers, using
+the _align_ parameter. The difference between the two obtained networks can be seen by checking basic network statistics.
+
+```{r}
+net <- read_ml("example.txt")
+net
+
+aligned_net <- read_ml("example.txt", align=TRUE)
+aligned_net
+```
+
+Notice that in the second case the network has six vertices, that is, all actors are present in all the layers.
+
+From now on we will use one of the networks already available in the package.
+
+# Part I: network exploration
+
+We can start our analysis by loading the library and retrieving the AUCS dataset, here stored in a variable we call _net_.
+The AUCS network has been often used in the literature to test new methods thanks to its small size, the presence of attributes, and its easy semantics. The data, described by Rossi and Magnani (2015), were collected at a university research department and include five types of online and offline relations. The population consists of 61 employees (called _actors_ in the multinet library), incuding professors, postdocs, PhD students and administrative staff. 
+
+```{r}
+library(multinet)
+net <- ml_aucs()
+```
+
+Typing the variable name we get a short description of the network.
+```{r}
+net
+```
+
+We can also list its attributes
+```{r}
+attributes_ml(net, target = "actor")
+```
+and individual objects, for example layers and actors.
+```{r}
+num_layers_ml(net)
+layers_ml(net)
+num_actors_ml(net)
+actors_ml(net)
+```
+
+To get a visual overview of the network and get a first idea of its structure we can plot it. We can produce a default visualization just by executing ``plot(net)``, but to make the plot more readable we will add a few details. In particular: (1) we explicitely compute a layout that draws each layer independently of the others, as declared by setting interlayer weights (w_inter) to 0, (2) we plot the layers on two rows, (3) we remove the labels of the vertices, to increase readability, and (4) we add a legend with the names of the layers.
+
+```{r out.width = '90%', fig.align='center', fig.align='center', tidy=FALSE}
+l <- layout_multiforce_ml(net, w_inter = 0, gravity = 1)
+
+plot(net, 
+     vertex.labels = "",
+     grid = c(2,3), 
+     layout = l, 
+     legend.x="bottomright", legend.inset = c(.05,.05),
+     show.layer.names = F
+     )
+```
+
+We can also use the attributes to inspect the relationship between the role and group of the actors and the topology of the network.
+
+```{r out.width = '90%', fig.align='center', fig.align='center', tidy=FALSE}
+role_attributes <- get_values_ml(net,  actors = vertices_ml(net)[1],  attribute = "role") 
+gr <- values2graphics(role_attributes[[1]])
+
+plot(net,
+	layout = l, 
+	grid = c(2,3),
+	vertex.labels = "",
+	vertex.color = gr$color,
+	layer.names.cex = .5, mai = .25
+)
+
+legend("bottomright", 
+  legend = gr$legend.text, 
+  col = gr$legend.col, 
+  pt.bg = gr$legend.col, 
+  pch = gr$legend.pch,
+  bty = "n", pt.cex = 1, cex = .5,  
+  inset = c(0.05, 0.05)
+)
+
+```
+
+```{r out.width = '90%', fig.align='center', fig.align='center', tidy=FALSE}
+group_attributes <- get_values_ml(net,  actors = vertices_ml(net)[1],  attribute = "group") 
+gr <- values2graphics(group_attributes[[1]])
+
+plot(net,
+	layout = l, 
+	grid = c(2,3),
+	vertex.labels = "",
+	vertex.color = gr$color,
+	layer.names.cex = .5, mai = .25
+)
+
+legend("bottomright", 
+       legend = gr$legend.text, 
+       col = gr$legend.col, 
+       pt.bg = gr$legend.col,
+       pch = gr$legend.pch,
+       bty = "n", pt.cex = 1, cex = .5,  
+       inset = c(0.05, 0.05)
+       )
+```
+
+# Part II: layer comparison
+
+After getting an idea of the general structure of the network, we can start computing some quantitative summaries, starting from the macro level: the structure of the layers and the relationships between layers.
+
+## Layer-by-layer statistics
+
+A first quantitative comparison of the layers can be done computing basic network measures for each layer.
+The ``summary`` function computes a selection of measures on all the layers, and also on the flattened network.
+
+```{r, echo=FALSE}
+kable(summary(net), digits=2, caption = "Basic layer statistics. n: order (number of vertices), m: size (number of edges), dir: edge directionality, nc: number of connected components, dens: density, cc: clustering coefficient, apl: average path length, dia: diameter. _flat_ is the combination of all the layers")
+```
+
+To compute other functions or perform another type of layer-by-layer analysis we can convert the layers into igraph objects, using the ``as.igraph`` function, for a single (group of) layer(s), or the ``as.list`` function to obtain a list with all the layers and the flattened network as igraph objects.
+Once the igraph objects have been generated, all the network measures available in igraph can be computed.
+
+```{r}
+as.igraph(net, layers = c("facebook", "leisure"))
+
+layers <- as.list(net)
+names(layers)
+transitivity(as.list(net)[[1]])
+```
+
+## Degree distributions
+
+The degree distribution often reveals interesting dynamics, similarities and dissimilarities between the layers and thus between the relations that are represented.
+
+```{r echo=FALSE}
+par(mfrow=c(3,2))
+hist(degree_ml(net), breaks = max(degree_ml(net)), main="flattened", xlab="degree")
+  for (i in 1:num_layers_ml(net)) {
+    d <- degree_ml(net, layers = layers_ml(net)[[i]])
+    hist(d, breaks = max(d, na.rm = TRUE), main=layers_ml(net)[[i]], col=i, xlab="degree")
+}
+par(mfrow=c(1,1))
+```
+
+To quantify the difference between these distributions we can use the ``layer_comparison_ml`` function that returns a table with pair-wise comparisons:
+```{}
+layer_comparison_ml(net, method = "jeffrey.degree")
+```
+
+```{r, echo=FALSE}
+kable(layer_comparison_ml(net, method = "jeffrey.degree"), digits=2, caption = "Dissimilarity between degree distributions, computed using the Jeffrey dissimilarity function")
+```
+
+## Actor-based layer comparison
+
+The ``layer_comparison_ml`` function can also be used to compute multiplex-specific comparisons considering the fact that the same actors may be present on the different layers. In fact, a first important comparison can be used to check to what extent this is true:
+
+```{r}
+comp <- layer_comparison_ml(net, method = "jaccard.actors")
+```
+
+```{r, echo = FALSE, fig.width=3.5, fig.asp=.8, fig.align = "center"}
+kable(comp, digits=2, caption="Overlapping between actors in the two layers. 0: no common actors. 1: the same actors are present in both layers")
+corrplot(as.matrix(comp), type="upper", order="hclust", is.corr=F,  cl.align.text="l")
+```
+
+If there is a strong overlapping between the actors, then we can ask whether actors having a high (or low) degree on one layer behave similarly in other layers. To do this we can compute the correlation between the degrees:
+
+```{r}
+comp <- layer_comparison_ml(net, method = "pearson.degree")
+```
+
+```{r, echo = FALSE, fig.width=3.5, fig.asp=.8, fig.align = "center"}
+kable(comp, digits=2, caption="Linear correlation between the degree of actors in the two layers, from -1 (top actors in one layer are not active in the other and vice versa) to 1 (top actors in one layer are top actors in the other and vice versa)")
+corrplot(as.matrix(comp), type="upper", order="hclust", cl.align.text="l")
+```
+
+Correlation only depends on the number of incident edges for each pair (actor, layer). We can also check to what extent actors are adjacent to the same other actors in different layers:
+
+```{r}
+comp <- layer_comparison_ml(net, method = "jaccard.edges")
+```
+
+```{r, echo = FALSE, fig.width=3.5, fig.asp=.8, fig.align = "center"}
+kable(comp, digits=2, caption="Overlapping between edges in the two layers. 0: no actors adjacent in one layer are also adjacent in the other. 1: all pairs of actors are either adjacent in both layers or in none")
+corrplot(as.matrix(comp), type="upper", order="hclust", is.corr=F, cl.align.text="l")
+```
+
+
+```{r}
+comp <- layer_comparison_ml(net, method = "coverage.edges")
+```
+
+```{r, echo = FALSE, fig.width=3.5, fig.asp=.8, fig.align = "center"}
+kable(comp, digits=2, caption="Directional overlapping (coverage) between edges in the two layers.")
+corrplot(as.matrix(comp), order="hclust", is.corr=F, cl.align.text="l")
+```
+
+The package provides additional similarity functions, listed in the following table.
+
+| Overlapping   |Distribution dissimilarity| Correlation  |
+| ------------- |-------------| -----|
+|jaccard.actors| dissimilarity.degree | pearson.degree |
+|jaccard.edges | KL.degree      |   rho.degree |
+|jaccard.triangles | jeffrey.degree      |     |
+|coverage.actors |       |     |
+|coverage.edges |       |     |
+|coverage.triangles |       |    |
+|sm.actors |       |     |
+|sm.edges |       |     |
+|sm.triangles |       |     |
+|rr.actors |       |     |
+|rr.edges |       |     |
+|rr.triangles |      |     |
+|kulczynski2.actors |       |     |
+|kulczynski2.edges |       |     |
+|kulczynski2.triangles |      |     |
+|hamann.actors |       |     |
+|hamann.edges |       |     |
+|hamann.triangles |      |     |
+
+# Part III: actor-level analysis
+
+## Degree and degree deviation
+
+The following is the list of highest-degree actors on the whole multiplex network:
+```{r}
+deg <- degree_ml(net)
+top_degrees <- head(deg[order(-deg)])
+top_actors <- head(actors_ml(net)[[1]][order(-deg)])
+top_actors
+```
+
+However, in a multiplex context degree becomes a layer-specific measure. We can no longer just ask "who is the most central actor" but we should ask "who is the most central actor on this layer?"
+Let us see how the most central actors look like when we "unpack" their centrality on the different layers:
+```{r echo=FALSE}
+kable(
+data.frame(actors=top_actors,
+           facebook=degree_ml(net, actors = top_actors, layers = "facebook"),
+           leisure=degree_ml(net, actors = top_actors, layers = "leisure"),
+           lunch=degree_ml(net, actors = top_actors, layers = "lunch"),
+           coauthor=degree_ml(net, actors = top_actors, layers = "coauthor"),
+           work=degree_ml(net, actors = top_actors, layers = "work"),
+           flat=top_degrees),caption = "Degree for the top actors on each layer", align = "c")
+```
+
+If we want to quantify to what extent actors have similar or different degrees on the different (combinations of) layers, we can compute the standard deviation of the degree:
+```{r}
+degree_deviation_ml(net, actors = top_actors)
+```
+
+## Neighborhood and exclusive neighborhood
+
+The layer structure, the concept of actor and the concept of node allow us to define _neighborhood_ and _exclusive neighborhood_. The neighbors of an actor *a* are those distinct actors that are connected to *a* on a specific layer or on a set of layers. While on a single layer degree and neighborhood size have the same value, they can be different when layers and nodes are taken into account.
+
+Starting from the idea of _neighborhood_, _exclusive neighborhood_ counts the neighbours that are connected to a specific actor only on that layer. That layer is thus important to preserve the full connectivity of the actor. In the following example U4 has 5 exclusive neighbors on the Facebook layer.
+
+It is now possible to visualize the top actors according to their neighborhood size (= degree) for each layer, for example work:
+```{r}
+m = neighborhood_ml(net, layers = "work")
+```
+
+```{r echo=FALSE}
+kable(
+  data.frame(
+    actors = head(actors_ml(net)[[1]][order(-m)]),
+    neighborhood = head(m[order(-m)])
+  ), 
+  caption = "Top-neighborhood actors, work layer",
+  align = "c"
+)
+```
+
+and leisure:
+
+```{r}
+m = neighborhood_ml(net, layers = "leisure")
+```
+
+```{r echo=FALSE}
+kable(
+  data.frame(
+    actors = head(actors_ml(net)[[1]][order(-m)]),
+    neighborhood = head(m[order(-m)])
+  ), 
+  caption = "Top-neighborhood actors, leisure layer",
+  align = "c"
+)
+```
+
+It is also possible to visualize the exclusive neighborhood for every single actor for a layer:
+```{r}
+m = xneighborhood_ml(net, layers = "work")
+```
+
+```{r echo=FALSE}
+kable(
+  data.frame(
+    actors = head(actors_ml(net)[[1]][order(-m)]),
+    neighborhood = head(m[order(-m)])
+  ), 
+  caption = "Top-xneighborhood actors, work layer",
+  align = "c"
+)
+```
+
+or a combination of layers:
+```{r}
+m = xneighborhood_ml(net, layers = c("work","facebook"))
+```
+
+```{r echo=FALSE}
+kable(
+  data.frame(
+    actors = head(actors_ml(net)[[1]][order(-m)]),
+    neighborhood = head(m[order(-m)])
+  ), 
+  caption = "Top-xneighborhood actors, work & facebook layer",
+  align = "c"
+)
+```
+
+## Relevance
+
+Once we have introduced the concept of *neighborhood*, we can easily introduce the idea of *relevance*. *Relevance* computes the ratio between the neighbors of an actor connected by edges belonging to a specific layer (or set of) and the total number of her neighbors. Every actor could be described as having a specific "signature" represented by her presence on the different layers.
+
+```{r echo=FALSE}
+kable(
+data.frame(facebook=relevance_ml(net, actors = "U123", layers = "facebook"),
+           leisure=relevance_ml(net, actors = "U123", layers = "leisure"),
+           lunch=relevance_ml(net, actors = "U123", layers = "lunch"),
+           coauthor=relevance_ml(net, actors = "U123", layers = "coauthor"),
+           work=relevance_ml(net, actors = "U123", layers = "work")), caption = "Relevance of each layer for U4", align = "c")
+
+```
+
+Similarly to *neighborhood* also *relevance* can be extended into an exclusive version where the ratio is defined using the *exclusive neighbors*. While relevance is an effective way to observe how much of an actor's neighborhood exists on each layer it does not allow to observe all the complexity that can be represented with a multilayer structure such as knowing how much the general connectivity of an actor would be affected by removing a specific layer. This can be answered looking at the *exclusive relevance*:
+
+```{r echo=FALSE}
+kable(
+data.frame(facebook=xrelevance_ml(net, actors = "U123", layers = "facebook"),
+           leisure=xrelevance_ml(net, actors = "U123", layers = "leisure"),
+           lunch=xrelevance_ml(net, actors = "U123", layers = "lunch"),
+           coauthor=xrelevance_ml(net, actors = "U123", layers = "coauthor"),
+           work=xrelevance_ml(net, actors = "U123", layers = "work")), caption = "Exclusive Relevance of each layer for U4", align = "c")
+
+```
+
+## Distances
+
+In addition to single-actor measures, the package can also be used to compute multilayer distances between pairs of actors. Distances are defined as sets of lengths of Pareto-optimal multidimensional paths. As an example, if two actors are adjacent on two layers, both edges would qualify as Pareto-optimal paths from one actor to the other, as edges on different layers are considered incomparable (that is, it is assumed that it makes no sense in general to claim that two adjacent vertices on Facebook are closer or further than two adjacent vertices on the co-author layer). Pareto-optimal paths can also span multiple layers.
+
+
+```{r echo=FALSE}
+dist = distance_ml(net, "U91", "U4")
+```
+
+```{r echo=FALSE}
+kable(dist)
+```
+
+
+# Part IV: community detection
+
+Network analysis is commonly used to find communities. A community could be defined as a subgroup of users who are more densely connected among themselves than with the rest of the network. This intuition is formalized through an approach to community detection known as modularity optimization. Adding a multilayer perspective means that interlayer modularity also needs to be taken into account. 
+
+```{r tidy=FALSE}
+ml_clust <- glouvain_ml(net)
+
+l <- layout_multiforce_ml(net)
+
+plot(net, 
+     com = ml_clust, 
+     vertex.labels = "",
+     layout=l, grid = c(2,3),
+     legend.x="bottomright", 
+     legend.inset = c(.05, .05),
+     show.layer.names = F
+     )
+```
+
+The following are communties on the whole multilayer network spanning at least two layers, identified using the clique percolation algorithm. The main practical difference between generalized Louvain and clique percolation is that the latter does not necessarily include all vertices in a community, and the same vertex can be included in more than one community. In addition, using clique percolation we can express the minimum connectivity requirements to identify a community (k = minimum clique size, m = minimum number of layers where the clique is present).
+```{r tidy=FALSE}
+ml_clust <- clique_percolation_ml(net, k=4, m=2)
+
+plot(net, 
+     com = ml_clust, 
+     vertex.labels = "",
+     layout=l, 
+     grid = c(2,3),
+     legend.x="bottomright", 
+     legend.inset = c(.05, .05),
+     show.layer.names = F
+     )
+```
+
+The following is part of the result of the second algorithm, set to find communities spanning at least two layers:
+```{r echo = FALSE}
+kable(ml_clust[with(ml_clust, order(cid, actor, layer)), ][1:20,])
+```
+
+We can also compute the multilayer modularity of different partitioning methods:
+```{r}
+comm = glouvain_ml(net)
+modularity_ml(net, comm)
+comm = mdlp_ml(net)
+modularity_ml(net, comm)
+comm = infomap_ml(net)
+modularity_ml(net, comm)
+comm = flat_ec_ml(net)
+modularity_ml(net, comm)
+comm = flat_nw_ml(net)
+modularity_ml(net, comm)
+```
+
+And compare the resulting communities for all methods  (or with ground truth data is available), using omega index, for partitioning or overlapping mmethods:
+```{r}
+omega_index_ml(net, glouvain_ml(net), abacus_ml(net))
+```
+Or normalized mutual information for partitioning methods:
+```{r}
+nmi_ml(net, glouvain_ml(net), flat_ec_ml(net))
+```
+
+# Part V: Network growing
+
+A growing area of interest is constituted by generative models of multiplex networks. 
+A simple way to approach the problem is to imagine layers that can evolve based on internal or external dynamics. Internal dynamics will be modelled after existing network models (considering a layer as a single layer network) while external dynamics will be represented by importing on layer *a* an edge already existing on layer *b*. Within this perspective the intuition is that relations existing on a layer might naturally expand over time into other layers (e.g. co-workers starting to add each other on Facebook because of their offline relationship). 
+
+Multinet allows to generate a network with n layers internally growing according to the Preferential Attachment model or growing by selecting new edges uniformly at random. Currently multinet also allows different growing rates for different layers.
+All the probability vectors must have the same number of fields, one for each layer: two in this example. By defining the parameters _pr.internal_ and _pr.external_, we are also implicitely defining _pr.no.action_ (1 minus the other probabilities, for each layer).
+
+In this first example we create a multilayer network with two independent layers based on Preferential Attachment. 
+```{r}
+models_mix <- c(evolution_pa_ml(3,1), evolution_pa_ml(3,1))
+pext <- c(0,0)
+pint <- c(1,1)
+dep <- matrix(c(0,1,1,0),2,2)
+ml_generated_mix <- grow_ml(200, 200, models_mix, pr.internal=pint, pr.external=pext, dependency=dep)
+```
+
+Now we can see the actors with the highest degree on each layer. We expected the hubs to be different in the two layers.
+```{r}
+deg0 <- degree_ml(ml_generated_mix, layers="l0")
+deg1 <- degree_ml(ml_generated_mix, layers="l1")
+
+top_actors_l0 <- head(actors_ml(ml_generated_mix)[[1]][order(-deg0)])
+top_actors_l1 <- head(actors_ml(ml_generated_mix)[[1]][order(-deg1)])
+
+top_actors_l0
+top_actors_l1
+
+layout_multiforce_ml(ml_generated_mix, w_inter=0, gravity=1) -> l
+plot(ml_generated_mix, vertex.label.cex = .5, vertex.labels= "", layout = l)
+```
+
+In this second example, one layer will only evolve according to its internal model, while the other will have a high probability of evolving according to the external dynamic (importing an edge from the other layer).
+```{r}
+models_mix <- c(evolution_pa_ml(3,1), evolution_pa_ml(3,1))
+pext <- c(0,.9)
+pint <- c(1,.1)
+dep <- matrix(c(0,1,1,0),2,2)
+ml_generated_mix <- grow_ml(200, 200, models_mix, pr.internal=pint, pr.external=pext, dependency=dep)
+```
+
+We can now see the actors with the highest degree on each layer, highlighting how some of the hubs in one layer have also a high degree in the other layer.
+```{r}
+deg0 <- degree_ml(ml_generated_mix, layers="l0")
+deg1 <- degree_ml(ml_generated_mix, layers="l1")
+
+top_actors_l0 <- head(actors_ml(ml_generated_mix)[[1]][order(-deg0)])
+top_actors_l1 <- head(actors_ml(ml_generated_mix)[[1]][order(-deg1)])
+
+top_actors_l0
+top_actors_l1
+
+layout_multiforce_ml(ml_generated_mix, w_inter=0, gravity=1) -> l
+plot(ml_generated_mix, vertex.label.cex = .5, vertex.labels= "", layout = l)
+```
+
+# References ####
+
+
+```{r,out.width = "150px",echo=FALSE}
+knitr::include_graphics("cover.jpg")
+```
+  
+Dickison M., Magnani M., Rossi L., "Multilayer Social Netwrok Analysis", Cambridge University Press, 2016
+http://multilayer.it.uu.se/
+
+
+# Acknowledgments ####
+
+This material was partially supported by the European Community through the project "Values and ethics in Innovation for Responsible Technology in Europe" (Virt-EU) funded under Horizon 2020 ICT-35-RIA call Enabling Responsible ICT-related Research and Innovation.
+
