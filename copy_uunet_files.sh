@@ -3,12 +3,10 @@ cd src
 rm -rf src
 rm -rf infomap
 rm -rf eclat
-rm -rf eigen3
 
 cp -r ../ext/uunet/src src
 cp -r ../ext/uunet/ext/infomap infomap
 cp -r ../ext/uunet/ext/eclat eclat
-cp -r ../ext/uunet/ext/eigen3 eigen3
 
 # build Makevars
 printf "SOURCES=" > sources
