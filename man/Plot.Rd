@@ -1,6 +1,7 @@
 \name{multinet.plotting}
 \alias{multinet.plotting}
 \alias{plot.Rcpp_RMLNetwork}
+\alias{plot}
 \alias{plot.ml}
 \alias{plot.multinet}
 \alias{values2graphics}
