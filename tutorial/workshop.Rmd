@@ -2,6 +2,7 @@
 title: "Analysis of Multiplex Social Networks with R"
 author:
 - Matteo Magnani, InfoLab, Uppsala University
+- Davide Vega, InfoLab, Uppsala University
 - Luca Rossi, Data Science & Society Lab, IT University of Copenhagen
 output:
   #word_document: default

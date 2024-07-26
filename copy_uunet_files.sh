@@ -7,6 +7,7 @@ rm -rf eclat
 cp -r ../ext/uunet/src src
 cp -r ../ext/uunet/ext/infomap infomap
 cp -r ../ext/uunet/ext/eclat eclat
+cp ../C++/* .
 
 # build Makevars
 printf "SOURCES=" > sources

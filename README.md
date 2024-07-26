@@ -45,7 +45,7 @@ The directory src/ contains the files exporting C++ functions from uunet to R, u
 - r_functions.cpp contains the functions referenced in rcpp_module_definition.cpp, themselves calling functions from uunet.
 - rcpp_utils.cpp contains some utility functions automating some common tasks used in r_functions.cpp.
 
-If you need to modify any of the files in the directories eclat/, infomap/ and src/, they are imported from uunet and should modified the [uunet repository](https://github.com/uuinfolab/uunet). One can then get the latest code from uunet by running:
+If you need to modify any of the files in the directories eclat/, infomap/ and src/, they are imported from uunet and should be modified in the [uunet repository](https://github.com/uuinfolab/uunet). One can then get the latest code from uunet by running:
 
 ```sh
 git submodule update --remote --merge
