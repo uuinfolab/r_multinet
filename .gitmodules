@@ -1,0 +1,3 @@
+[submodule "ext/uunet"]
+	path = ext/uunet
+	url = https://github.com/uuinfolab/uunet.git
