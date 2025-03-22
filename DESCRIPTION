@@ -1,6 +1,6 @@
 Package: multinet
 Type: Package
-Title: Analysis and mining of multilayer social networks
+Title: Analysis and Mining of Multilayer Social Networks
 Version: 4.2.2
 Date: 2025-03-20
 Authors@R: c(person("Matteo", "Magnani", role = c("aut", "cre"), email = "matteo.magnani@it.uu.se"), person("Luca", "Rossi", role = "aut", comment="API design"), person("Davide", "Vega", role = "aut", comment="API and code design"), person("Obaida", "Hanteer", role = "ctb", comment="mdlpa, flat_ec, flat_nw, some community evaluation functions"))
