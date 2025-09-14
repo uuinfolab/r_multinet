@@ -48,11 +48,17 @@ The directory src/ contains the files exporting C++ functions from uunet to R, u
 If you need to modify any of the files in the directories eclat/, infomap/ and src/, they are imported from uunet and should be modified in the [uunet repository](https://github.com/uuinfolab/uunet). One can then get the latest code from uunet by running:
 
 ```sh
-git submodule update --remote --merge
+cd ext/uunet
+git checkout v0.9 <-- specify correct tag from uunet
+cd ..
+cd ..
+git add ext/uunet
+git commit -m "moved submodule to v0.9"
+git push
 ./copy_uunet_files.sh
 ```
 
-The first command loads the latest code from uunet into ext/, the second command copies the needed files from ext/ into src/ and also produces the src/Makevars and src/Makevars.win files.
+copy_uunet_files.sh copies the needed files from ext/ into src/ and also produces the src/Makevars and src/Makevars.win files.
 
 ## Contact
 
