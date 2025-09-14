@@ -1,4 +1,3 @@
-PKG_CFLAGS = -Ieclat/eclat/src -Ieclat/tract/src -Ieclat/math/src -Ieclat/util/src -Ieclat/apriori/src
 PKG_CXXFLAGS = -Isrc -Ilibs -Iboost -Ieclat/eclat/src -Ieclat/tract/src -Ieclat/math/src -Ieclat/util/src -Ieclat/apriori/src -Iinfomap
 PKG_CPPFLAGS = -DCRAN  -DNS_INFOMAP -DONLY_C_LOCALE=1
 
