@@ -49,7 +49,8 @@ If you need to modify any of the files in the directories eclat/, infomap/ and s
 
 ```sh
 cd ext/uunet
-git checkout v0.9 <-- specify correct tag from uunet
+git checkout master
+git pull
 cd ..
 cd ..
 git add ext/uunet
