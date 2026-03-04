@@ -1,3 +1,11 @@
+# version 4.4
+
+- infomap has been removed (the function can still be called, but returns a warning and an empty result). The original code is no longer compatible with CRAN.
+
+# version 4.3.2
+
+- made compatible with latest version of igraph.
+
 # version 4.3.1
 
 - updated to version 0.9.1 of the uunet library. Prevents an error on some compilers, not caught by CRAN checks.
